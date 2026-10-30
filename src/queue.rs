@@ -2,6 +2,8 @@ use chrono::{Local, TimeZone};
 use serde::{Deserialize, Serialize};
 use std::time::{SystemTime, UNIX_EPOCH};
 
+use crate::config::AdvancedOptions;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum DownloadMode {
     Video,
@@ -106,6 +108,7 @@ pub struct QueueItem {
     pub quality: Quality,
     pub path: String,
     pub is_playlist: bool,
+    pub advanced: AdvancedOptions,
     pub state: ItemState,
     pub added_at: SystemTime,
 }

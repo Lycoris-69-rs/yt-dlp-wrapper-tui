@@ -78,6 +78,24 @@ pub fn draw_help(f: &mut Frame, app: &mut App, area: Rect) {
             ],
         ),
         (
+            " Defaults — General tab",
+            &[
+                " Tab          Switch tab (General / Advanced)",
+                " ↑ / ↓        Select item",
+                " Enter        Toggle type / quality / playlist / path",
+            ],
+        ),
+        (
+            " Defaults — Advanced tab",
+            &[
+                " Tab          Switch tab (General / Advanced)",
+                " ↑ / ↓        Select option",
+                " Enter/Space  Toggle geo-bypass / edit text option",
+                " Options:     Proxy · Geo bypass · Cookies · User agent · Rate limit · Extra args",
+                " Text fields: Enter — save · Esc — cancel",
+            ],
+        ),
+        (
             " Queue settings — Columns tab",
             &[
                 " Tab          Switch tab (Columns / Widths / Style)",

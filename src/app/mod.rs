@@ -12,7 +12,7 @@ use crate::event::{AppEvent, DownloadEvent, MetaEvent};
 use crate::queue::{ItemState, QueueItem};
 
 pub use form::{Form, FormField};
-pub use settings::{Popup, QueueTab};
+pub use settings::{DefaultsTab, Popup, QueueTab};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Focus {
@@ -43,6 +43,10 @@ pub struct App {
     pub path_input_cursor: usize,
     pub status_bar_index: usize,
     pub defaults_index: usize,
+    pub defaults_tab: DefaultsTab,
+    pub advanced_input: String,
+    pub advanced_input_cursor: usize,
+    pub advanced_edit_index: usize,
     pub queue_tab: QueueTab,
     pub queue_table_index: usize,
 
@@ -75,6 +79,10 @@ impl App {
             path_input_cursor: 0,
             status_bar_index: 0,
             defaults_index: 0,
+            defaults_tab: DefaultsTab::General,
+            advanced_input: String::new(),
+            advanced_input_cursor: 0,
+            advanced_edit_index: 0,
             queue_tab: QueueTab::Columns,
             queue_table_index: 0,
             editing_url: false,
@@ -130,6 +138,7 @@ impl App {
             quality: self.form.quality,
             path: self.form.path.clone(),
             is_playlist: self.form.is_playlist,
+            advanced: self.config.general.advanced.clone(),
             state: ItemState::Pending,
             added_at: std::time::SystemTime::now(),
         };

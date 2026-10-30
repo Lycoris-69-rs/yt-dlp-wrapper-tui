@@ -3,7 +3,7 @@ pub mod paths;
 pub mod queue_table;
 pub mod status_bar;
 
-pub use general::GeneralConfig;
+pub use general::{ADVANCED_OPTION_COUNT, AdvancedOptions, GeneralConfig};
 pub use paths::PathsConfig;
 pub use queue_table::{ALL_COLUMNS, Alignment, QueueTableConfig};
 pub use status_bar::StatusBarConfig;

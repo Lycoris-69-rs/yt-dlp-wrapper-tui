@@ -2,6 +2,7 @@ use anyhow::Result;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
 use super::App;
+use crate::config::{ADVANCED_OPTION_COUNT, AdvancedOptions};
 use crate::queue::Quality;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -12,9 +13,34 @@ pub enum Popup {
     PathDelete,
     Settings,
     SettingsDefaults,
+    SettingsAdvancedInput,
     SettingsStatusBar,
     SettingsQueue,
     SettingsPathPicker,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DefaultsTab {
+    General,
+    Advanced,
+}
+
+impl DefaultsTab {
+    const ALL: [DefaultsTab; 2] = [DefaultsTab::General, DefaultsTab::Advanced];
+    pub(crate) fn next(self) -> Self {
+        let i = Self::ALL.iter().position(|&t| t == self).unwrap_or(0);
+        Self::ALL[(i + 1) % Self::ALL.len()]
+    }
+    pub(crate) fn prev(self) -> Self {
+        let i = Self::ALL.iter().position(|&t| t == self).unwrap_or(0);
+        Self::ALL[(i + Self::ALL.len() - 1) % Self::ALL.len()]
+    }
+    pub fn label(&self) -> &'static str {
+        match self {
+            DefaultsTab::General => "General",
+            DefaultsTab::Advanced => "Advanced",
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -63,6 +89,7 @@ impl App {
             KeyCode::Enter => match self.settings_index {
                 0 => {
                     self.popup = Popup::SettingsDefaults;
+                    self.defaults_tab = DefaultsTab::General;
                     self.defaults_index = 0;
                 }
                 1 => {
@@ -82,50 +109,154 @@ impl App {
     }
 
     pub(crate) async fn handle_settings_defaults_key(&mut self, key: KeyEvent) -> Result<()> {
-        const LAST_IDX: usize = 3;
-        match key.code {
-            KeyCode::Esc | KeyCode::Char('q') => self.popup = Popup::Settings,
-            KeyCode::Up => {
-                if self.defaults_index > 0 {
-                    self.defaults_index -= 1;
+        if key.code == KeyCode::Tab {
+            self.defaults_tab = self.defaults_tab.next();
+            self.defaults_index = 0;
+            return Ok(());
+        }
+        if key.code == KeyCode::BackTab {
+            self.defaults_tab = self.defaults_tab.prev();
+            self.defaults_index = 0;
+            return Ok(());
+        }
+
+        match self.defaults_tab {
+            DefaultsTab::General => {
+                const LAST_IDX: usize = 3;
+                match key.code {
+                    KeyCode::Esc | KeyCode::Char('q') => self.popup = Popup::Settings,
+                    KeyCode::Up => {
+                        if self.defaults_index > 0 {
+                            self.defaults_index -= 1;
+                        }
+                    }
+                    KeyCode::Down => {
+                        if self.defaults_index < LAST_IDX {
+                            self.defaults_index += 1;
+                        }
+                    }
+                    KeyCode::Enter => match self.defaults_index {
+                        0 => {
+                            self.config.general.default_mode =
+                                if self.config.general.default_mode == "Video" {
+                                    "Audio".into()
+                                } else {
+                                    "Video".into()
+                                };
+                            let _ = self.config.save();
+                        }
+                        1 => {
+                            let q = Quality::from_label(&self.config.general.default_quality);
+                            self.config.general.default_quality = q.next().label().to_string();
+                            let _ = self.config.save();
+                        }
+                        2 => {
+                            self.config.general.default_playlist =
+                                !self.config.general.default_playlist;
+                            let _ = self.config.save();
+                        }
+                        3 => {
+                            self.popup = Popup::SettingsPathPicker;
+                            self.path_picker_index = self
+                                .config
+                                .paths
+                                .favorites
+                                .iter()
+                                .position(|p| p == &self.config.general.default_path)
+                                .unwrap_or(0);
+                        }
+                        _ => {}
+                    },
+                    _ => {}
                 }
+                Ok(())
             }
-            KeyCode::Down => {
-                if self.defaults_index < LAST_IDX {
-                    self.defaults_index += 1;
-                }
-            }
-            KeyCode::Enter => match self.defaults_index {
-                0 => {
-                    self.config.general.default_mode =
-                        if self.config.general.default_mode == "Video" {
-                            "Audio".into()
+            DefaultsTab::Advanced => {
+                const LAST_IDX: usize = ADVANCED_OPTION_COUNT - 1;
+                match key.code {
+                    KeyCode::Esc | KeyCode::Char('q') => self.popup = Popup::Settings,
+                    KeyCode::Up => {
+                        if self.defaults_index > 0 {
+                            self.defaults_index -= 1;
+                        }
+                    }
+                    KeyCode::Down => {
+                        if self.defaults_index < LAST_IDX {
+                            self.defaults_index += 1;
+                        }
+                    }
+                    KeyCode::Enter | KeyCode::Char(' ') => {
+                        if AdvancedOptions::is_toggle(self.defaults_index) {
+                            self.config.general.advanced.toggle(self.defaults_index);
+                            let _ = self.config.save();
                         } else {
-                            "Video".into()
-                        };
-                    let _ = self.config.save();
+                            self.advanced_edit_index = self.defaults_index;
+                            self.advanced_input = self
+                                .config
+                                .general
+                                .advanced
+                                .text(self.defaults_index)
+                                .to_string();
+                            self.advanced_input_cursor = self.advanced_input.len();
+                            self.popup = Popup::SettingsAdvancedInput;
+                        }
+                    }
+                    _ => {}
                 }
-                1 => {
-                    let q = Quality::from_label(&self.config.general.default_quality);
-                    self.config.general.default_quality = q.next().label().to_string();
-                    let _ = self.config.save();
+                Ok(())
+            }
+        }
+    }
+
+    pub(crate) async fn handle_settings_advanced_input_key(&mut self, key: KeyEvent) -> Result<()> {
+        match key.code {
+            KeyCode::Esc => self.popup = Popup::SettingsDefaults,
+            KeyCode::Enter => {
+                let value = self.advanced_input.trim().to_string();
+                self.config
+                    .general
+                    .advanced
+                    .set_text(self.advanced_edit_index, value);
+                let _ = self.config.save();
+                self.popup = Popup::SettingsDefaults;
+            }
+            KeyCode::Char(c) => {
+                let byte_idx = self.advanced_input_cursor.min(self.advanced_input.len());
+                self.advanced_input.insert(byte_idx, c);
+                self.advanced_input_cursor += c.len_utf8();
+            }
+            KeyCode::Backspace => {
+                if self.advanced_input_cursor > 0 {
+                    let mut new_cursor = self.advanced_input_cursor - 1;
+                    while !self.advanced_input.is_char_boundary(new_cursor) {
+                        new_cursor -= 1;
+                    }
+                    self.advanced_input
+                        .replace_range(new_cursor..self.advanced_input_cursor, "");
+                    self.advanced_input_cursor = new_cursor;
                 }
-                2 => {
-                    self.config.general.default_playlist = !self.config.general.default_playlist;
-                    let _ = self.config.save();
+            }
+            KeyCode::Left => {
+                if self.advanced_input_cursor > 0 {
+                    let mut c = self.advanced_input_cursor - 1;
+                    while !self.advanced_input.is_char_boundary(c) {
+                        c -= 1;
+                    }
+                    self.advanced_input_cursor = c;
                 }
-                3 => {
-                    self.popup = Popup::SettingsPathPicker;
-                    self.path_picker_index = self
-                        .config
-                        .paths
-                        .favorites
-                        .iter()
-                        .position(|p| p == &self.config.general.default_path)
-                        .unwrap_or(0);
+            }
+            KeyCode::Right => {
+                if self.advanced_input_cursor < self.advanced_input.len() {
+                    let mut c = self.advanced_input_cursor + 1;
+                    while c < self.advanced_input.len() && !self.advanced_input.is_char_boundary(c)
+                    {
+                        c += 1;
+                    }
+                    self.advanced_input_cursor = c;
                 }
-                _ => {}
-            },
+            }
+            KeyCode::Home => self.advanced_input_cursor = 0,
+            KeyCode::End => self.advanced_input_cursor = self.advanced_input.len(),
             _ => {}
         }
         Ok(())

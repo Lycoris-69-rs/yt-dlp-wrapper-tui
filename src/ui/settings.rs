@@ -6,15 +6,14 @@ use ratatui::{
     widgets::{Clear, Paragraph, Wrap},
 };
 
-use crate::app::{App, QueueTab};
-use crate::config::{ALL_COLUMNS, Alignment};
+use crate::app::{App, DefaultsTab, QueueTab};
+use crate::config::{ADVANCED_OPTION_COUNT, ALL_COLUMNS, AdvancedOptions, Alignment};
 
-use super::common::{centered_rect, col_label, menu_rect, popup_block};
+use super::common::{centered_rect, col_label, menu_rect, popup_block, truncate};
 
 fn on_off(b: bool) -> &'static str {
     if b { "ON " } else { "OFF" }
 }
-
 
 pub fn draw_settings(f: &mut Frame, app: &mut App, area: Rect) {
     let popup = menu_rect(area);
@@ -37,7 +36,7 @@ pub fn draw_settings(f: &mut Frame, app: &mut App, area: Rect) {
     ];
 
     let categories = [
-        ("Defaults", "Type · Quality · Playlist · Path"),
+        ("Defaults", "General · Advanced (proxy, cookies, etc.)"),
         ("Status Bar", "Show/hide bottom bar and its sections"),
         ("Queue", "Columns order · widths · alignment"),
     ];
@@ -71,63 +70,123 @@ pub fn draw_settings(f: &mut Frame, app: &mut App, area: Rect) {
     f.render_widget(p, popup);
 }
 
-
 pub fn draw_settings_defaults(f: &mut Frame, app: &mut App, area: Rect) {
     let popup = menu_rect(area);
     f.render_widget(Clear, popup);
 
-    let mut lines = vec![
+    let mut tabs: Vec<Span> = Vec::new();
+    let all_tabs = [DefaultsTab::General, DefaultsTab::Advanced];
+    for (i, t) in all_tabs.iter().enumerate() {
+        let active = *t == app.defaults_tab;
+        let style = if active {
+            Style::default()
+                .fg(Color::Black)
+                .bg(Color::Cyan)
+                .add_modifier(Modifier::BOLD)
+        } else {
+            Style::default().fg(Color::DarkGray)
+        };
+        if i > 0 {
+            tabs.push(Span::raw("  "));
+        }
+        tabs.push(Span::styled(format!(" {} ", t.label()), style));
+    }
+
+    let mut lines: Vec<Line> = vec![
         Line::from(Span::styled(
-            " Defaults (↑↓ · Enter · Esc)",
+            " Defaults (Tab · ↑↓ · Enter · Esc)",
             Style::default()
                 .fg(Color::Yellow)
                 .add_modifier(Modifier::BOLD),
         )),
         Line::from(""),
-        Line::from(Span::styled(
-            " New download defaults",
-            Style::default()
-                .fg(Color::Cyan)
-                .add_modifier(Modifier::BOLD),
-        )),
+        Line::from(tabs),
+        Line::from(""),
     ];
 
-    let items = [
-        format!(
-            " Default Type:        [{}]",
-            app.config.general.default_mode
-        ),
-        format!(
-            " Default Quality:     [{}]",
-            app.config.general.default_quality
-        ),
-        format!(
-            " Default Playlist:    [{}]",
-            on_off(app.config.general.default_playlist)
-        ),
-        format!(
-            " Default Path:        [{}]",
-            app.config.general.default_path
-        ),
-    ];
-
-    for (i, item) in items.iter().enumerate() {
-        if i == app.defaults_index {
+    match app.defaults_tab {
+        DefaultsTab::General => {
             lines.push(Line::from(Span::styled(
-                format!(" ▶{}", item),
+                " New download defaults",
                 Style::default()
-                    .fg(Color::Black)
-                    .bg(Color::Cyan)
+                    .fg(Color::Cyan)
                     .add_modifier(Modifier::BOLD),
             )));
-        } else {
-            lines.push(Line::from(format!("  {}", item)));
+
+            let items = [
+                format!(
+                    " Default Type:        [{}]",
+                    app.config.general.default_mode
+                ),
+                format!(
+                    " Default Quality:     [{}]",
+                    app.config.general.default_quality
+                ),
+                format!(
+                    " Default Playlist:    [{}]",
+                    on_off(app.config.general.default_playlist)
+                ),
+                format!(
+                    " Default Path:        [{}]",
+                    app.config.general.default_path
+                ),
+            ];
+
+            for (i, item) in items.iter().enumerate() {
+                if i == app.defaults_index {
+                    lines.push(Line::from(Span::styled(
+                        format!(" ▶{}", item),
+                        Style::default()
+                            .fg(Color::Black)
+                            .bg(Color::Cyan)
+                            .add_modifier(Modifier::BOLD),
+                    )));
+                } else {
+                    lines.push(Line::from(format!("  {}", item)));
+                }
+            }
+        }
+        DefaultsTab::Advanced => {
+            lines.push(Line::from(Span::styled(
+                " Yt-dlp options for new downloads",
+                Style::default()
+                    .fg(Color::Cyan)
+                    .add_modifier(Modifier::BOLD),
+            )));
+
+            for i in 0..ADVANCED_OPTION_COUNT {
+                let value = app.config.general.advanced.value(i);
+                let shown = if value.is_empty() {
+                    "—".to_string()
+                } else {
+                    value
+                };
+                let text = truncate(
+                    &format!("{:<14} [{}]", AdvancedOptions::label(i), shown),
+                    56,
+                );
+                if i == app.defaults_index {
+                    lines.push(Line::from(Span::styled(
+                        format!(" ▶ {}", text),
+                        Style::default()
+                            .fg(Color::Black)
+                            .bg(Color::Cyan)
+                            .add_modifier(Modifier::BOLD),
+                    )));
+                } else {
+                    lines.push(Line::from(format!("   {}", text)));
+                }
+            }
         }
     }
 
     lines.push(Line::from(""));
+    let note = match app.defaults_tab {
+        DefaultsTab::General => " Note: settings apply to new downloads.",
+        DefaultsTab::Advanced => " Note: empty text = option off; extra args split by spaces.",
+    };
     lines.push(Line::from(Span::styled(
-        " Note: settings apply to new downloads.",
+        note,
         Style::default().fg(Color::DarkGray),
     )));
 
@@ -135,6 +194,32 @@ pub fn draw_settings_defaults(f: &mut Frame, app: &mut App, area: Rect) {
     f.render_widget(p, popup);
 }
 
+pub fn draw_settings_advanced_input(f: &mut Frame, app: &mut App, area: Rect) {
+    let popup = centered_rect(60, 20, area);
+    f.render_widget(Clear, popup);
+
+    let byte_idx = app.advanced_input_cursor.min(app.advanced_input.len());
+    let (before, after) = app.advanced_input.split_at(byte_idx);
+    let display = format!("{}█{}", before, after);
+    let title = format!(" {} ", AdvancedOptions::label(app.advanced_edit_index));
+
+    let lines = vec![
+        Line::from(""),
+        Line::from(vec![
+            Span::raw("  Value: "),
+            Span::styled(display, Style::default().fg(Color::Black).bg(Color::Cyan)),
+        ]),
+        Line::from(""),
+        Line::from(Span::styled(
+            "  Enter — save · Esc — cancel",
+            Style::default().fg(Color::DarkGray),
+        )),
+    ];
+    let p = Paragraph::new(lines)
+        .block(popup_block(&title))
+        .wrap(Wrap { trim: false });
+    f.render_widget(p, popup);
+}
 
 pub fn draw_settings_status_bar(f: &mut Frame, app: &mut App, area: Rect) {
     let popup = menu_rect(area);
@@ -195,7 +280,6 @@ pub fn draw_settings_status_bar(f: &mut Frame, app: &mut App, area: Rect) {
     let p = Paragraph::new(lines).block(popup_block(" Status Bar "));
     f.render_widget(p, popup);
 }
-
 
 pub fn draw_settings_queue(f: &mut Frame, app: &mut App, area: Rect) {
     let popup = menu_rect(area);
@@ -387,7 +471,6 @@ pub fn draw_settings_queue(f: &mut Frame, app: &mut App, area: Rect) {
     let p = Paragraph::new(lines).block(popup_block(" Queue "));
     f.render_widget(p, popup);
 }
-
 
 pub fn draw_settings_path_picker(f: &mut Frame, app: &mut App, area: Rect) {
     let popup = centered_rect(60, 60, area);

@@ -38,6 +38,9 @@ impl App {
             Popup::PathDelete => return self.handle_path_delete_key(key).await,
             Popup::Settings => return self.handle_settings_key(key).await,
             Popup::SettingsDefaults => return self.handle_settings_defaults_key(key).await,
+            Popup::SettingsAdvancedInput => {
+                return self.handle_settings_advanced_input_key(key).await;
+            }
             Popup::SettingsStatusBar => return self.handle_settings_status_bar_key(key).await,
             Popup::SettingsQueue => return self.handle_settings_queue_key(key).await,
             Popup::SettingsPathPicker => return self.handle_settings_path_picker_key(key).await,

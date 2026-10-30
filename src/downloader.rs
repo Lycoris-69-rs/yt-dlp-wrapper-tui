@@ -92,6 +92,7 @@ pub async fn run_download(
 
     args.push("--progress-template".into());
     args.push("download:PROGRESS|%(progress._percent_str)s|%(progress._speed_str)s".into());
+    args.extend(item.advanced.to_args());
     args.push("-o".into());
     args.push(format!("{}/%(title)s.%(ext)s", item.path));
     args.push(item.url.clone());
