@@ -379,24 +379,20 @@ pub fn draw_settings_queue(f: &mut Frame, app: &mut App, area: Rect) {
                     let selected = i == app.queue_table_index;
                     let marker = if selected { "▶" } else { " " };
 
-                    let (label_txt, is_auto) = if cfg.is_auto(col) {
-                        (format!("[AUTO w={:>2}]", cfg.weight_of(col)), true)
+                    let label_txt = if cfg.is_auto(col) {
+                        format!("[AUTO w={:>2}]", cfg.weight_of(col))
                     } else {
-                        (format!("[{:>7}]", cfg.width_of(col)), false)
+                        format!("[{:>7}]", cfg.width_of(col))
                     };
 
                     let text = format!(" {} {:<10} {} ", marker, col_label(col), label_txt);
-                    let base = if is_auto {
-                        Style::default().fg(Color::Green)
-                    } else {
-                        Style::default()
-                    };
                     let style = if selected {
-                        base.bg(Color::Cyan)
+                        Style::default()
                             .fg(Color::Black)
+                            .bg(Color::Cyan)
                             .add_modifier(Modifier::BOLD)
                     } else {
-                        base.add_modifier(Modifier::DIM)
+                        Style::default().fg(Color::DarkGray)
                     };
                     lines.push(Line::from(Span::styled(text, style)));
                 }
@@ -409,20 +405,9 @@ pub fn draw_settings_queue(f: &mut Frame, app: &mut App, area: Rect) {
             )));
         }
         QueueTab::Style => {
-            let all = Alignment::ALL
-                .iter()
-                .map(|a| a.label())
-                .collect::<Vec<_>>()
-                .join(" · ");
             let hidden = cfg.hidden_columns();
             let vis_len = cfg.columns.len();
 
-            lines.push(Line::from(Span::styled(
-                format!(" Values: {}", all),
-                Style::default()
-                    .fg(Color::Cyan)
-                    .add_modifier(Modifier::BOLD),
-            )));
             lines.push(Line::from(Span::styled(
                 " Visible",
                 Style::default()
@@ -491,7 +476,7 @@ pub fn draw_settings_queue(f: &mut Frame, app: &mut App, area: Rect) {
                             .bg(Color::Cyan)
                             .add_modifier(Modifier::BOLD)
                     } else {
-                        Style::default().add_modifier(Modifier::DIM)
+                        Style::default().fg(Color::DarkGray)
                     };
                     lines.push(Line::from(Span::styled(text, style)));
                 }

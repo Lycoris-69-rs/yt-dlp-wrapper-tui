@@ -389,8 +389,7 @@ impl App {
                         }
                     }
                     KeyCode::Left => {
-                        if let Some(col) =
-                            self.config.queue_table.column_at(self.queue_table_index)
+                        if let Some(col) = self.config.queue_table.column_at(self.queue_table_index)
                         {
                             if self.config.queue_table.is_auto(&col) {
                                 self.config.queue_table.set_auto(&col, false);
@@ -409,8 +408,7 @@ impl App {
                         }
                     }
                     KeyCode::Right => {
-                        if let Some(col) =
-                            self.config.queue_table.column_at(self.queue_table_index)
+                        if let Some(col) = self.config.queue_table.column_at(self.queue_table_index)
                         {
                             if self.config.queue_table.is_auto(&col) {
                                 self.config.queue_table.set_auto(&col, false);
@@ -427,8 +425,7 @@ impl App {
                         }
                     }
                     KeyCode::Char('+') | KeyCode::Char('=') => {
-                        if let Some(col) =
-                            self.config.queue_table.column_at(self.queue_table_index)
+                        if let Some(col) = self.config.queue_table.column_at(self.queue_table_index)
                         {
                             if self.config.queue_table.is_auto(&col) {
                                 let step: i16 = if key.modifiers.contains(KeyModifiers::SHIFT) {
@@ -446,8 +443,7 @@ impl App {
                         }
                     }
                     KeyCode::Char('-') | KeyCode::Char('_') => {
-                        if let Some(col) =
-                            self.config.queue_table.column_at(self.queue_table_index)
+                        if let Some(col) = self.config.queue_table.column_at(self.queue_table_index)
                         {
                             if self.config.queue_table.is_auto(&col) {
                                 let step: i16 = if key.modifiers.contains(KeyModifiers::SHIFT) {
@@ -468,8 +464,7 @@ impl App {
                     | KeyCode::Char('A')
                     | KeyCode::Enter
                     | KeyCode::Char(' ') => {
-                        if let Some(col) =
-                            self.config.queue_table.column_at(self.queue_table_index)
+                        if let Some(col) = self.config.queue_table.column_at(self.queue_table_index)
                         {
                             self.config.queue_table.toggle_auto(&col);
                             let _ = self.config.save();
@@ -494,8 +489,7 @@ impl App {
                         }
                     }
                     KeyCode::Right | KeyCode::Char(' ') | KeyCode::Enter => {
-                        if let Some(col) =
-                            self.config.queue_table.column_at(self.queue_table_index)
+                        if let Some(col) = self.config.queue_table.column_at(self.queue_table_index)
                         {
                             let a = self.config.queue_table.cycle_alignment_next(&col);
                             let _ = self.config.save();
@@ -503,8 +497,7 @@ impl App {
                         }
                     }
                     KeyCode::Left => {
-                        if let Some(col) =
-                            self.config.queue_table.column_at(self.queue_table_index)
+                        if let Some(col) = self.config.queue_table.column_at(self.queue_table_index)
                         {
                             let a = self.config.queue_table.cycle_alignment_prev(&col);
                             let _ = self.config.save();

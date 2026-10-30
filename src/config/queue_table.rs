@@ -16,8 +16,6 @@ pub enum Alignment {
 }
 
 impl Alignment {
-    pub const ALL: [Alignment; 3] = [Alignment::Left, Alignment::Center, Alignment::Right];
-
     pub fn label(&self) -> &'static str {
         match self {
             Alignment::Left => "Left",
