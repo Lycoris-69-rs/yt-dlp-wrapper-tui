@@ -1,0 +1,18 @@
+[package]
+name = "yt-dlp-tui"
+version = "1.0.0"
+edition = "2024"
+description = "TUI wrapper for yt-dlp with queue and progress"
+
+[dependencies]
+ratatui = "0.30.2"
+crossterm = "0.29"
+tokio = { version = "1", features = ["full"] }
+tokio-util = "0.7"
+anyhow = "1"
+thiserror = "2"
+serde = { version = "1", features = ["derive"] }
+toml = "1.1.8"
+dirs = "7"
+chrono = "0.4"
+unicode-width = "0.2.2"
