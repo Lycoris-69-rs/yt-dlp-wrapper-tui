@@ -169,6 +169,27 @@ impl QueueTableConfig {
         }
     }
 
+    pub fn hidden_columns(&self) -> Vec<&'static str> {
+        ALL_COLUMNS
+            .iter()
+            .copied()
+            .filter(|c| !self.columns.iter().any(|x| x == c))
+            .collect()
+    }
+
+    pub fn column_at(&self, index: usize) -> Option<String> {
+        if let Some(col) = self.columns.get(index) {
+            Some(col.clone())
+        } else {
+            self.hidden_columns()
+                .get(index - self.columns.len())
+                .map(|c| c.to_string())
+        }
+    }
+
+    pub fn selectable_len(&self) -> usize {
+        self.columns.len() + self.hidden_columns().len()
+    }
 
     pub fn alignment_of(&self, col: &str) -> Alignment {
         self.alignment.get(col).copied().unwrap_or_default()

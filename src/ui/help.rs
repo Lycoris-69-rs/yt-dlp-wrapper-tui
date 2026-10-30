@@ -16,14 +16,6 @@ pub fn draw_help(f: &mut Frame, app: &mut App, area: Rect) {
 
     let mut lines: Vec<Line> = Vec::new();
 
-    lines.push(Line::from(Span::styled(
-        " Help (↑↓ · PgUp/PgDn · F1/F2 · Esc)",
-        Style::default()
-            .fg(Color::Yellow)
-            .add_modifier(Modifier::BOLD),
-    )));
-    lines.push(Line::from(""));
-
     let sections: &[(&str, &[&str])] = &[
         (
             " General",

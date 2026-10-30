@@ -375,7 +375,7 @@ impl App {
                 Ok(())
             }
             QueueTab::Widths => {
-                let cols_len = self.config.queue_table.columns.len();
+                let cols_len = self.config.queue_table.selectable_len();
                 match key.code {
                     KeyCode::Esc | KeyCode::Char('q') => self.popup = Popup::Settings,
                     KeyCode::Up => {
@@ -389,9 +389,9 @@ impl App {
                         }
                     }
                     KeyCode::Left => {
-                        if self.queue_table_index < cols_len {
-                            let col =
-                                self.config.queue_table.columns[self.queue_table_index].clone();
+                        if let Some(col) =
+                            self.config.queue_table.column_at(self.queue_table_index)
+                        {
                             if self.config.queue_table.is_auto(&col) {
                                 self.config.queue_table.set_auto(&col, false);
                             } else {
@@ -409,9 +409,9 @@ impl App {
                         }
                     }
                     KeyCode::Right => {
-                        if self.queue_table_index < cols_len {
-                            let col =
-                                self.config.queue_table.columns[self.queue_table_index].clone();
+                        if let Some(col) =
+                            self.config.queue_table.column_at(self.queue_table_index)
+                        {
                             if self.config.queue_table.is_auto(&col) {
                                 self.config.queue_table.set_auto(&col, false);
                             } else {
@@ -427,9 +427,9 @@ impl App {
                         }
                     }
                     KeyCode::Char('+') | KeyCode::Char('=') => {
-                        if self.queue_table_index < cols_len {
-                            let col =
-                                self.config.queue_table.columns[self.queue_table_index].clone();
+                        if let Some(col) =
+                            self.config.queue_table.column_at(self.queue_table_index)
+                        {
                             if self.config.queue_table.is_auto(&col) {
                                 let step: i16 = if key.modifiers.contains(KeyModifiers::SHIFT) {
                                     5
@@ -446,9 +446,9 @@ impl App {
                         }
                     }
                     KeyCode::Char('-') | KeyCode::Char('_') => {
-                        if self.queue_table_index < cols_len {
-                            let col =
-                                self.config.queue_table.columns[self.queue_table_index].clone();
+                        if let Some(col) =
+                            self.config.queue_table.column_at(self.queue_table_index)
+                        {
                             if self.config.queue_table.is_auto(&col) {
                                 let step: i16 = if key.modifiers.contains(KeyModifiers::SHIFT) {
                                     -5
@@ -468,9 +468,9 @@ impl App {
                     | KeyCode::Char('A')
                     | KeyCode::Enter
                     | KeyCode::Char(' ') => {
-                        if self.queue_table_index < cols_len {
-                            let col =
-                                self.config.queue_table.columns[self.queue_table_index].clone();
+                        if let Some(col) =
+                            self.config.queue_table.column_at(self.queue_table_index)
+                        {
                             self.config.queue_table.toggle_auto(&col);
                             let _ = self.config.save();
                         }
@@ -480,7 +480,7 @@ impl App {
                 Ok(())
             }
             QueueTab::Style => {
-                let cols_len = self.config.queue_table.columns.len();
+                let cols_len = self.config.queue_table.selectable_len();
                 match key.code {
                     KeyCode::Esc | KeyCode::Char('q') => self.popup = Popup::Settings,
                     KeyCode::Up => {
@@ -494,18 +494,18 @@ impl App {
                         }
                     }
                     KeyCode::Right | KeyCode::Char(' ') | KeyCode::Enter => {
-                        if self.queue_table_index < cols_len {
-                            let col =
-                                self.config.queue_table.columns[self.queue_table_index].clone();
+                        if let Some(col) =
+                            self.config.queue_table.column_at(self.queue_table_index)
+                        {
                             let a = self.config.queue_table.cycle_alignment_next(&col);
                             let _ = self.config.save();
                             self.status = format!("{} alignment: {}", col, a.label());
                         }
                     }
                     KeyCode::Left => {
-                        if self.queue_table_index < cols_len {
-                            let col =
-                                self.config.queue_table.columns[self.queue_table_index].clone();
+                        if let Some(col) =
+                            self.config.queue_table.column_at(self.queue_table_index)
+                        {
                             let a = self.config.queue_table.cycle_alignment_prev(&col);
                             let _ = self.config.save();
                             self.status = format!("{} alignment: {}", col, a.label());

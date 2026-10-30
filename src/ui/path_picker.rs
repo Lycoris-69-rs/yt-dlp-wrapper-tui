@@ -79,7 +79,7 @@ pub fn draw_path_picker(f: &mut Frame, app: &mut App, area: Rect) {
     )));
 
     let p = Paragraph::new(lines)
-        .block(popup_block(" Select Path (↑↓ · Enter · Esc) "))
+        .block(popup_block(" Select Path "))
         .wrap(Wrap { trim: false });
     f.render_widget(p, popup);
 }
@@ -97,11 +97,6 @@ pub fn draw_path_input(f: &mut Frame, app: &mut App, area: Rect) {
             Span::raw("  Path: "),
             Span::styled(display, Style::default().fg(Color::Black).bg(Color::Cyan)),
         ]),
-        Line::from(""),
-        Line::from(Span::styled(
-            "  Enter — save · Esc — cancel",
-            Style::default().fg(Color::DarkGray),
-        )),
     ];
     let p = Paragraph::new(lines)
         .block(popup_block(" New Path "))
@@ -132,11 +127,6 @@ pub fn draw_path_delete(f: &mut Frame, app: &mut App, area: Rect) {
         lines.push(Line::from(Span::styled(format!(" {} ", path), style)));
     }
 
-    lines.push(Line::from(""));
-    lines.push(Line::from(Span::styled(
-        " Enter — delete · Esc — back",
-        Style::default().fg(Color::DarkGray),
-    )));
     let p = Paragraph::new(lines)
         .block(
             Block::default()

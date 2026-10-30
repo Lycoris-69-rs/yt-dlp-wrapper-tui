@@ -19,21 +19,12 @@ pub fn draw_settings(f: &mut Frame, app: &mut App, area: Rect) {
     let popup = menu_rect(area);
     f.render_widget(Clear, popup);
 
-    let mut lines: Vec<Line> = vec![
-        Line::from(Span::styled(
-            " Settings (↑↓ · Enter · F1/F2 · Esc)",
-            Style::default()
-                .fg(Color::Yellow)
-                .add_modifier(Modifier::BOLD),
-        )),
-        Line::from(""),
-        Line::from(Span::styled(
-            " Categories",
-            Style::default()
-                .fg(Color::Cyan)
-                .add_modifier(Modifier::BOLD),
-        )),
-    ];
+    let mut lines: Vec<Line> = vec![Line::from(Span::styled(
+        " Categories",
+        Style::default()
+            .fg(Color::Cyan)
+            .add_modifier(Modifier::BOLD),
+    ))];
 
     let categories = [
         ("Defaults", "General · Advanced (proxy, cookies, etc.)"),
@@ -92,17 +83,7 @@ pub fn draw_settings_defaults(f: &mut Frame, app: &mut App, area: Rect) {
         tabs.push(Span::styled(format!(" {} ", t.label()), style));
     }
 
-    let mut lines: Vec<Line> = vec![
-        Line::from(Span::styled(
-            " Defaults (Tab · ↑↓ · Enter · Esc)",
-            Style::default()
-                .fg(Color::Yellow)
-                .add_modifier(Modifier::BOLD),
-        )),
-        Line::from(""),
-        Line::from(tabs),
-        Line::from(""),
-    ];
+    let mut lines: Vec<Line> = vec![Line::from(tabs), Line::from("")];
 
     match app.defaults_tab {
         DefaultsTab::General => {
@@ -209,11 +190,6 @@ pub fn draw_settings_advanced_input(f: &mut Frame, app: &mut App, area: Rect) {
             Span::raw("  Value: "),
             Span::styled(display, Style::default().fg(Color::Black).bg(Color::Cyan)),
         ]),
-        Line::from(""),
-        Line::from(Span::styled(
-            "  Enter — save · Esc — cancel",
-            Style::default().fg(Color::DarkGray),
-        )),
     ];
     let p = Paragraph::new(lines)
         .block(popup_block(&title))
@@ -227,21 +203,12 @@ pub fn draw_settings_status_bar(f: &mut Frame, app: &mut App, area: Rect) {
 
     let sb = &app.config.status_bar;
 
-    let mut lines = vec![
-        Line::from(Span::styled(
-            " Status Bar (↑↓ · Enter/Space · Esc)",
-            Style::default()
-                .fg(Color::Yellow)
-                .add_modifier(Modifier::BOLD),
-        )),
-        Line::from(""),
-        Line::from(Span::styled(
-            " Visibility",
-            Style::default()
-                .fg(Color::Cyan)
-                .add_modifier(Modifier::BOLD),
-        )),
-    ];
+    let mut lines = vec![Line::from(Span::styled(
+        " Visibility",
+        Style::default()
+            .fg(Color::Cyan)
+            .add_modifier(Modifier::BOLD),
+    ))];
 
     let items = [
         format!(" Show status bar:         [{}]", on_off(sb.enabled)),
@@ -305,17 +272,7 @@ pub fn draw_settings_queue(f: &mut Frame, app: &mut App, area: Rect) {
         tabs.push(Span::styled(format!(" {} ", t.label()), style));
     }
 
-    let mut lines: Vec<Line> = vec![
-        Line::from(Span::styled(
-            " Queue (Tab · ↑↓ · ←/→ · Enter/Space · Esc)",
-            Style::default()
-                .fg(Color::Yellow)
-                .add_modifier(Modifier::BOLD),
-        )),
-        Line::from(""),
-        Line::from(tabs),
-        Line::from(""),
-    ];
+    let mut lines: Vec<Line> = vec![Line::from(tabs), Line::from("")];
 
     match app.queue_tab {
         QueueTab::Columns => {
@@ -328,7 +285,7 @@ pub fn draw_settings_queue(f: &mut Frame, app: &mut App, area: Rect) {
             let vis_len = vis.len();
 
             lines.push(Line::from(Span::styled(
-                " Visible (←/→ move · Enter/Space hide)",
+                " Visible",
                 Style::default()
                     .fg(Color::Cyan)
                     .add_modifier(Modifier::BOLD),
@@ -351,7 +308,7 @@ pub fn draw_settings_queue(f: &mut Frame, app: &mut App, area: Rect) {
             if !hidden.is_empty() {
                 lines.push(Line::from(""));
                 lines.push(Line::from(Span::styled(
-                    " Hidden (Enter/Space to show)",
+                    " Hidden",
                     Style::default()
                         .fg(Color::Cyan)
                         .add_modifier(Modifier::BOLD),
@@ -374,8 +331,11 @@ pub fn draw_settings_queue(f: &mut Frame, app: &mut App, area: Rect) {
             }
         }
         QueueTab::Widths => {
+            let hidden = cfg.hidden_columns();
+            let vis_len = cfg.columns.len();
+
             lines.push(Line::from(Span::styled(
-                " ←/→ ±1 (fixed) · +/− weight · Shift ±5 · A/Enter AUTO",
+                " Visible",
                 Style::default()
                     .fg(Color::Cyan)
                     .add_modifier(Modifier::BOLD),
@@ -406,6 +366,42 @@ pub fn draw_settings_queue(f: &mut Frame, app: &mut App, area: Rect) {
                 lines.push(Line::from(Span::styled(text, style)));
             }
 
+            if !hidden.is_empty() {
+                lines.push(Line::from(""));
+                lines.push(Line::from(Span::styled(
+                    " Hidden",
+                    Style::default()
+                        .fg(Color::Cyan)
+                        .add_modifier(Modifier::BOLD),
+                )));
+                for (j, col) in hidden.iter().enumerate() {
+                    let i = vis_len + j;
+                    let selected = i == app.queue_table_index;
+                    let marker = if selected { "▶" } else { " " };
+
+                    let (label_txt, is_auto) = if cfg.is_auto(col) {
+                        (format!("[AUTO w={:>2}]", cfg.weight_of(col)), true)
+                    } else {
+                        (format!("[{:>7}]", cfg.width_of(col)), false)
+                    };
+
+                    let text = format!(" {} {:<10} {} ", marker, col_label(col), label_txt);
+                    let base = if is_auto {
+                        Style::default().fg(Color::Green)
+                    } else {
+                        Style::default()
+                    };
+                    let style = if selected {
+                        base.bg(Color::Cyan)
+                            .fg(Color::Black)
+                            .add_modifier(Modifier::BOLD)
+                    } else {
+                        base.add_modifier(Modifier::DIM)
+                    };
+                    lines.push(Line::from(Span::styled(text, style)));
+                }
+            }
+
             lines.push(Line::from(""));
             lines.push(Line::from(Span::styled(
                 " AUTO columns share free space by weight (1..20).",
@@ -418,9 +414,17 @@ pub fn draw_settings_queue(f: &mut Frame, app: &mut App, area: Rect) {
                 .map(|a| a.label())
                 .collect::<Vec<_>>()
                 .join(" · ");
+            let hidden = cfg.hidden_columns();
+            let vis_len = cfg.columns.len();
 
             lines.push(Line::from(Span::styled(
-                format!(" ←/→ cycle alignment · Enter/Space forward · [{}]", all),
+                format!(" Values: {}", all),
+                Style::default()
+                    .fg(Color::Cyan)
+                    .add_modifier(Modifier::BOLD),
+            )));
+            lines.push(Line::from(Span::styled(
+                " Visible",
                 Style::default()
                     .fg(Color::Cyan)
                     .add_modifier(Modifier::BOLD),
@@ -452,6 +456,45 @@ pub fn draw_settings_queue(f: &mut Frame, app: &mut App, area: Rect) {
                     Style::default()
                 };
                 lines.push(Line::from(Span::styled(text, style)));
+            }
+
+            if !hidden.is_empty() {
+                lines.push(Line::from(""));
+                lines.push(Line::from(Span::styled(
+                    " Hidden",
+                    Style::default()
+                        .fg(Color::Cyan)
+                        .add_modifier(Modifier::BOLD),
+                )));
+                for (j, col) in hidden.iter().enumerate() {
+                    let i = vis_len + j;
+                    let selected = i == app.queue_table_index;
+                    let marker = if selected { "▶" } else { " " };
+
+                    let align = cfg.alignment_of(col);
+                    let icon = match align {
+                        Alignment::Left => "◀",
+                        Alignment::Center => "◆",
+                        Alignment::Right => "▶",
+                    };
+
+                    let text = format!(
+                        " {} {:<10} [{}] {} ",
+                        marker,
+                        col_label(col),
+                        align.label(),
+                        icon,
+                    );
+                    let style = if selected {
+                        Style::default()
+                            .fg(Color::Black)
+                            .bg(Color::Cyan)
+                            .add_modifier(Modifier::BOLD)
+                    } else {
+                        Style::default().add_modifier(Modifier::DIM)
+                    };
+                    lines.push(Line::from(Span::styled(text, style)));
+                }
             }
 
             lines.push(Line::from(""));
@@ -515,7 +558,7 @@ pub fn draw_settings_path_picker(f: &mut Frame, app: &mut App, area: Rect) {
     )));
 
     let p = Paragraph::new(lines)
-        .block(popup_block(" Select Default Path (↑↓ · Enter · Esc) "))
+        .block(popup_block(" Select Default Path "))
         .wrap(Wrap { trim: false });
     f.render_widget(p, popup);
 }
