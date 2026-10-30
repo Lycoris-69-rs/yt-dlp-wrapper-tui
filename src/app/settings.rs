@@ -449,7 +449,13 @@ impl App {
                     self.config.add_favorite(&current);
                     let _ = self.config.save();
                     self.status = format!("✅ Added to favorites: {}", current);
-                    self.path_picker_index = self.config.paths.favorites.len() - 1;
+                    self.path_picker_index = self
+                        .config
+                        .paths
+                        .favorites
+                        .iter()
+                        .position(|p| p == &current)
+                        .unwrap_or(0);
                 } else if self.path_picker_index == favs_len + 1 {
                     self.popup = Popup::PathInput;
                     self.path_input.clear();

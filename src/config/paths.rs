@@ -12,7 +12,13 @@ impl PathsConfig {
         if let Some(dl) = dirs::download_dir() {
             favorites.push(dl.to_string_lossy().to_string());
         }
-        Self { favorites }
+        let mut cfg = Self { favorites };
+        cfg.sort();
+        cfg
+    }
+
+    pub fn sort(&mut self) {
+        self.favorites.sort_by_cached_key(|p| p.to_lowercase());
     }
 }
 

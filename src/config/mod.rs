@@ -45,7 +45,11 @@ impl Config {
             return Self::default();
         };
         match std::fs::read_to_string(&path) {
-            Ok(s) => toml::from_str(&s).unwrap_or_default(),
+            Ok(s) => {
+                let mut config: Self = toml::from_str(&s).unwrap_or_default();
+                config.paths.sort();
+                config
+            }
             Err(_) => Self::default(),
         }
     }
@@ -65,6 +69,7 @@ impl Config {
     pub fn add_favorite(&mut self, path: &str) {
         if !path.is_empty() && !self.paths.favorites.iter().any(|p| p == path) {
             self.paths.favorites.push(path.to_string());
+            self.paths.sort();
         }
     }
 
