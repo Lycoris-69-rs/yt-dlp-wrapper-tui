@@ -221,3 +221,8 @@ src/
 ├── event.rs         # keyboard and download events
 └── queue.rs         # queue and quality model
 ```
+
+
+## Prewiev
+
+![preview](image.png)
