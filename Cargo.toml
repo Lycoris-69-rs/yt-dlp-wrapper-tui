@@ -1,5 +1,5 @@
 [package]
-name = "yt-dlp-tui"
+name = "yt-dlp-wrapper-tui"
 version = "1.0.0"
 edition = "2024"
 description = "TUI wrapper for yt-dlp with queue and progress"

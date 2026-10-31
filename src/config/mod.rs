@@ -37,7 +37,7 @@ impl Default for Config {
 
 impl Config {
     pub fn config_path() -> Option<PathBuf> {
-        dirs::config_dir().map(|p| p.join("yt-dlp-tui").join("config.toml"))
+        dirs::config_dir().map(|p| p.join("yt-dlp-wrapper-tui").join("config.toml"))
     }
 
     pub fn load() -> Self {
