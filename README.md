@@ -222,6 +222,8 @@ src/
 └── queue.rs         # queue and quality model
 ```
 
+## Notes
+This project was built with the assistance of AI coding assistants. The architecture, feature set, and final integration were designed and reviewed by the author.
 
 ## Prewiev
 
