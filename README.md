@@ -225,4 +225,4 @@ src/
 
 ## Prewiev
 
-![preview](image.png)
+![preview](preview.png)
