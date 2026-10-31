@@ -1,7 +1,4 @@
-# Maintainer: Your Name <you@example.com>
-
-# IMPORTANT: replace USERNAME with your GitHub account (or specify another repository URL).
-_gh="USERNAME"
+_gh="Lycoris-69-rs"
 
 pkgname=yt-dlp-wrapper-tui
 pkgver=1.0.0
@@ -25,7 +22,6 @@ sha256sums=('SKIP')
 prepare() {
   cd "$pkgname-$pkgver"
 
-  # Fetch dependencies in advance; the build itself uses --locked.
   cargo fetch --locked
 }
 

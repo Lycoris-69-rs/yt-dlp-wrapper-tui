@@ -1,7 +1,4 @@
-# Maintainer: Your Name <you@example.com>
-
-# IMPORTANT: replace USERNAME with your GitHub account (or specify another repository URL).
-_gh="USERNAME"
+_gh="Lycoris-69-rs"
 
 pkgname=yt-dlp-wrapper-tui-git
 pkgver=1.0.0.r5.g4aa2e60
