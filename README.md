@@ -47,7 +47,7 @@ cargo install --path .
 
 ### Arch Linux
 
-The repository includes `PKGBUILD` (stable release) and `PKGBUILD-git` (git build). Before using them, replace `USERNAME` in the `_gh` variable with the actual GitHub account.
+The repository includes `PKGBUILD` (stable release) and `PKGBUILD-git` (git build).
 
 ```bash
 makepkg -si
