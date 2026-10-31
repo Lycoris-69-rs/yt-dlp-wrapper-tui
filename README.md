@@ -129,7 +129,6 @@ Advanced options apply to new queue items. Default values are used when the appl
 | --- | --- |
 | Linux | `~/.config/yt-dlp-wrapper-tui/config.toml` |
 | macOS | `~/Library/Application Support/yt-dlp-wrapper-tui/config.toml` |
-| Windows | `%APPDATA%\yt-dlp-wrapper-tui\config.toml` |
 
 ### Example `config.toml`
 
