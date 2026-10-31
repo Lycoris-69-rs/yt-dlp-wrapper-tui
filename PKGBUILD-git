@@ -1,6 +1,6 @@
 # Maintainer: Your Name <you@example.com>
 
-# ВАЖНО: замените USERNAME на ваш GitHub-аккаунт (или укажите другой URL репозитория).
+# IMPORTANT: replace USERNAME with your GitHub account (or specify another repository URL).
 _gh="USERNAME"
 
 pkgname=yt-dlp-wrapper-tui-git

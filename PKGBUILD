@@ -1,6 +1,6 @@
 # Maintainer: Your Name <you@example.com>
 
-# ВАЖНО: замените USERNAME на ваш GitHub-аккаунт (или укажите другой URL репозитория).
+# IMPORTANT: replace USERNAME with your GitHub account (or specify another repository URL).
 _gh="USERNAME"
 
 pkgname=yt-dlp-wrapper-tui
@@ -25,7 +25,7 @@ sha256sums=('SKIP')
 prepare() {
   cd "$pkgname-$pkgver"
 
-  # Загружаем зависимости заранее; сам build идёт с --locked.
+  # Fetch dependencies in advance; the build itself uses --locked.
   cargo fetch --locked
 }
 
