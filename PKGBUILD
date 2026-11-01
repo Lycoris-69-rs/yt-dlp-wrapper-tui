@@ -1,7 +1,7 @@
 _gh="Lycoris-69-rs"
 
 pkgname=yt-dlp-wrapper-tui
-pkgver=1.0.0
+pkgver=1.1.0
 pkgrel=1
 pkgdesc='TUI wrapper for yt-dlp with download queue and progress'
 arch=('x86_64' 'aarch64')
