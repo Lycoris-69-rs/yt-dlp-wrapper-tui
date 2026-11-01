@@ -391,73 +391,61 @@ impl App {
                     KeyCode::Left => {
                         if let Some(col) = self.config.queue_table.column_at(self.queue_table_index)
                         {
-                            if self.config.queue_table.is_auto(&col) {
-                                self.config.queue_table.set_auto(&col, false);
+                            self.config.queue_table.set_auto(&col, false);
+                            let w = self.config.queue_table.width_of(&col);
+                            let step = if key.modifiers.contains(KeyModifiers::SHIFT) {
+                                5
                             } else {
-                                let w = self.config.queue_table.width_of(&col);
-                                let step = if key.modifiers.contains(KeyModifiers::SHIFT) {
-                                    5
-                                } else {
-                                    1
-                                };
-                                self.config
-                                    .queue_table
-                                    .set_width(&col, w.saturating_sub(step).max(1));
-                            }
+                                1
+                            };
+                            let w = w.saturating_sub(step).max(1);
+                            self.config.queue_table.set_width(&col, w);
                             let _ = self.config.save();
+                            self.status = format!("Width {}: {} chars", col, w);
                         }
                     }
                     KeyCode::Right => {
                         if let Some(col) = self.config.queue_table.column_at(self.queue_table_index)
                         {
-                            if self.config.queue_table.is_auto(&col) {
-                                self.config.queue_table.set_auto(&col, false);
+                            self.config.queue_table.set_auto(&col, false);
+                            let w = self.config.queue_table.width_of(&col);
+                            let step = if key.modifiers.contains(KeyModifiers::SHIFT) {
+                                5
                             } else {
-                                let w = self.config.queue_table.width_of(&col);
-                                let step = if key.modifiers.contains(KeyModifiers::SHIFT) {
-                                    5
-                                } else {
-                                    1
-                                };
-                                self.config.queue_table.set_width(&col, (w + step).min(120));
-                            }
+                                1
+                            };
+                            let w = (w + step).min(120);
+                            self.config.queue_table.set_width(&col, w);
                             let _ = self.config.save();
+                            self.status = format!("Width {}: {} chars", col, w);
                         }
                     }
                     KeyCode::Char('+') | KeyCode::Char('=') => {
                         if let Some(col) = self.config.queue_table.column_at(self.queue_table_index)
                         {
-                            if self.config.queue_table.is_auto(&col) {
-                                let step: i16 = if key.modifiers.contains(KeyModifiers::SHIFT) {
-                                    5
-                                } else {
-                                    1
-                                };
-                                let w = self.config.queue_table.bump_weight(&col, step);
-                                let _ = self.config.save();
-                                self.status = format!("Weight {}: {}", col, w);
+                            self.config.queue_table.set_auto(&col, true);
+                            let step: i16 = if key.modifiers.contains(KeyModifiers::SHIFT) {
+                                5
                             } else {
-                                self.status =
-                                    "Weight only editable for AUTO columns (press A)".into();
-                            }
+                                1
+                            };
+                            let w = self.config.queue_table.bump_weight(&col, step);
+                            let _ = self.config.save();
+                            self.status = format!("Weight {}: {}", col, w);
                         }
                     }
                     KeyCode::Char('-') | KeyCode::Char('_') => {
                         if let Some(col) = self.config.queue_table.column_at(self.queue_table_index)
                         {
-                            if self.config.queue_table.is_auto(&col) {
-                                let step: i16 = if key.modifiers.contains(KeyModifiers::SHIFT) {
-                                    -5
-                                } else {
-                                    -1
-                                };
-                                let w = self.config.queue_table.bump_weight(&col, step);
-                                let _ = self.config.save();
-                                self.status = format!("Weight {}: {}", col, w);
+                            self.config.queue_table.set_auto(&col, true);
+                            let step: i16 = if key.modifiers.contains(KeyModifiers::SHIFT) {
+                                -5
                             } else {
-                                self.status =
-                                    "Weight only editable for AUTO columns (press A)".into();
-                            }
+                                -1
+                            };
+                            let w = self.config.queue_table.bump_weight(&col, step);
+                            let _ = self.config.save();
+                            self.status = format!("Weight {}: {}", col, w);
                         }
                     }
                     KeyCode::Char('a')
@@ -488,20 +476,34 @@ impl App {
                             self.queue_table_index += 1;
                         }
                     }
-                    KeyCode::Right | KeyCode::Char(' ') | KeyCode::Enter => {
+                    KeyCode::Right => {
                         if let Some(col) = self.config.queue_table.column_at(self.queue_table_index)
                         {
-                            let a = self.config.queue_table.cycle_alignment_next(&col);
+                            self.config
+                                .queue_table
+                                .set_alignment(&col, crate::config::Alignment::Right);
                             let _ = self.config.save();
-                            self.status = format!("{} alignment: {}", col, a.label());
+                            self.status = format!("{} alignment: Right", col);
+                        }
+                    }
+                    KeyCode::Enter | KeyCode::Char(' ') => {
+                        if let Some(col) = self.config.queue_table.column_at(self.queue_table_index)
+                        {
+                            self.config
+                                .queue_table
+                                .set_alignment(&col, crate::config::Alignment::Center);
+                            let _ = self.config.save();
+                            self.status = format!("{} alignment: Center", col);
                         }
                     }
                     KeyCode::Left => {
                         if let Some(col) = self.config.queue_table.column_at(self.queue_table_index)
                         {
-                            let a = self.config.queue_table.cycle_alignment_prev(&col);
+                            self.config
+                                .queue_table
+                                .set_alignment(&col, crate::config::Alignment::Left);
                             let _ = self.config.save();
-                            self.status = format!("{} alignment: {}", col, a.label());
+                            self.status = format!("{} alignment: Left", col);
                         }
                     }
                     _ => {}

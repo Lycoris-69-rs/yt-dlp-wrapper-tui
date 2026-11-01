@@ -23,22 +23,6 @@ impl Alignment {
             Alignment::Right => "Right",
         }
     }
-
-    pub fn next(self) -> Self {
-        match self {
-            Alignment::Left => Alignment::Center,
-            Alignment::Center => Alignment::Right,
-            Alignment::Right => Alignment::Left,
-        }
-    }
-
-    pub fn prev(self) -> Self {
-        match self {
-            Alignment::Left => Alignment::Right,
-            Alignment::Center => Alignment::Left,
-            Alignment::Right => Alignment::Center,
-        }
-    }
 }
 
 impl Default for Alignment {
@@ -195,18 +179,6 @@ impl QueueTableConfig {
 
     pub fn set_alignment(&mut self, col: &str, a: Alignment) {
         self.alignment.insert(col.to_string(), a);
-    }
-
-    pub fn cycle_alignment_next(&mut self, col: &str) -> Alignment {
-        let a = self.alignment_of(col).next();
-        self.set_alignment(col, a);
-        a
-    }
-
-    pub fn cycle_alignment_prev(&mut self, col: &str) -> Alignment {
-        let a = self.alignment_of(col).prev();
-        self.set_alignment(col, a);
-        a
     }
 }
 

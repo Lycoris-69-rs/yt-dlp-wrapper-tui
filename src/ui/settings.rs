@@ -343,27 +343,43 @@ pub fn draw_settings_queue(f: &mut Frame, app: &mut App, area: Rect) {
             for (i, col) in cfg.columns.iter().enumerate() {
                 let selected = i == app.queue_table_index;
                 let marker = if selected { "▶" } else { " " };
-
-                let (label_txt, is_auto) = if cfg.is_auto(col) {
-                    (format!("[AUTO w={:>2}]", cfg.weight_of(col)), true)
+                let is_auto = cfg.is_auto(col);
+                let num = if is_auto {
+                    cfg.weight_of(col)
                 } else {
-                    (format!("[{:>7}]", cfg.width_of(col)), false)
+                    cfg.width_of(col)
                 };
+                let mode = if is_auto { "AUTO" } else { "STANDART" };
 
-                let text = format!(" {} {:<10} {} ", marker, col_label(col), label_txt);
-                let base = if is_auto {
+                let selected_style = Style::default()
+                    .fg(Color::Black)
+                    .bg(Color::Cyan)
+                    .add_modifier(Modifier::BOLD);
+                let label_style = if selected {
+                    selected_style
+                } else {
+                    Style::default()
+                };
+                let num_style = if selected {
+                    selected_style
+                } else if is_auto {
                     Style::default().fg(Color::Green)
                 } else {
                     Style::default()
                 };
-                let style = if selected {
-                    base.bg(Color::Cyan)
-                        .fg(Color::Black)
-                        .add_modifier(Modifier::BOLD)
+                let mode_style = if is_auto {
+                    Style::default().fg(Color::Green)
                 } else {
-                    base
+                    Style::default()
                 };
-                lines.push(Line::from(Span::styled(text, style)));
+
+                lines.push(Line::from(vec![
+                    Span::styled(format!(" {} {:<10}", marker, col_label(col)), label_style),
+                    Span::styled(" ", label_style),
+                    Span::styled(format!("[{:^7}]", num), num_style),
+                    Span::styled(" ", num_style),
+                    Span::styled(format!(" {}", mode), mode_style),
+                ]));
             }
 
             if !hidden.is_empty() {
@@ -378,29 +394,47 @@ pub fn draw_settings_queue(f: &mut Frame, app: &mut App, area: Rect) {
                     let i = vis_len + j;
                     let selected = i == app.queue_table_index;
                     let marker = if selected { "▶" } else { " " };
-
-                    let label_txt = if cfg.is_auto(col) {
-                        format!("[AUTO w={:>2}]", cfg.weight_of(col))
+                    let is_auto = cfg.is_auto(col);
+                    let num = if is_auto {
+                        cfg.weight_of(col)
                     } else {
-                        format!("[{:>7}]", cfg.width_of(col))
+                        cfg.width_of(col)
                     };
+                    let mode = if is_auto { "AUTO" } else { "STANDART" };
 
-                    let text = format!(" {} {:<10} {} ", marker, col_label(col), label_txt);
-                    let style = if selected {
-                        Style::default()
-                            .fg(Color::Black)
-                            .bg(Color::Cyan)
-                            .add_modifier(Modifier::BOLD)
-                    } else {
+                    let selected_style = Style::default()
+                        .fg(Color::Black)
+                        .bg(Color::Cyan)
+                        .add_modifier(Modifier::BOLD);
+                    let dim_style = Style::default().fg(Color::DarkGray);
+
+                    let label_style = if selected { selected_style } else { dim_style };
+                    let num_style = if selected {
+                        selected_style
+                    } else if is_auto {
                         Style::default().fg(Color::DarkGray)
+                    } else {
+                        dim_style
                     };
-                    lines.push(Line::from(Span::styled(text, style)));
+                    let mode_style = if is_auto {
+                        Style::default().fg(Color::DarkGray)
+                    } else {
+                        dim_style
+                    };
+
+                    lines.push(Line::from(vec![
+                        Span::styled(format!(" {} {:<10}", marker, col_label(col)), label_style),
+                        Span::styled(" ", label_style),
+                        Span::styled(format!("[{:^7}]", num), num_style),
+                        Span::styled(" ", num_style),
+                        Span::styled(format!(" {}", mode), mode_style),
+                    ]));
                 }
             }
 
             lines.push(Line::from(""));
             lines.push(Line::from(Span::styled(
-                " AUTO columns share free space by weight (1..20).",
+                " ←/→ width in chars · +/− width by weight (switches mode).",
                 Style::default().fg(Color::DarkGray),
             )));
         }
@@ -425,22 +459,30 @@ pub fn draw_settings_queue(f: &mut Frame, app: &mut App, area: Rect) {
                     Alignment::Right => "▶",
                 };
 
-                let text = format!(
-                    " {} {:<10} [{}] {} ",
-                    marker,
-                    col_label(col),
-                    align.label(),
-                    icon,
-                );
-                let style = if selected {
-                    Style::default()
-                        .fg(Color::Black)
-                        .bg(Color::Cyan)
-                        .add_modifier(Modifier::BOLD)
+                let selected_style = Style::default()
+                    .fg(Color::Black)
+                    .bg(Color::Cyan)
+                    .add_modifier(Modifier::BOLD);
+                let base_style = if selected {
+                    selected_style
                 } else {
                     Style::default()
                 };
-                lines.push(Line::from(Span::styled(text, style)));
+                let value_style = if selected {
+                    selected_style
+                } else {
+                    Style::default().fg(Color::White)
+                };
+                let icon_style = Style::default().fg(Color::White);
+
+                lines.push(Line::from(vec![
+                    Span::styled(format!(" {} {:<10} [", marker, col_label(col)), base_style),
+                    Span::styled(format!("{:^9}", align.label()), value_style),
+                    Span::styled("]", base_style),
+                    Span::styled(" ", base_style),
+                    Span::raw(" "),
+                    Span::styled(icon, icon_style),
+                ]));
             }
 
             if !hidden.is_empty() {
@@ -463,28 +505,30 @@ pub fn draw_settings_queue(f: &mut Frame, app: &mut App, area: Rect) {
                         Alignment::Right => "▶",
                     };
 
-                    let text = format!(
-                        " {} {:<10} [{}] {} ",
-                        marker,
-                        col_label(col),
-                        align.label(),
-                        icon,
-                    );
-                    let style = if selected {
-                        Style::default()
-                            .fg(Color::Black)
-                            .bg(Color::Cyan)
-                            .add_modifier(Modifier::BOLD)
-                    } else {
-                        Style::default().fg(Color::DarkGray)
-                    };
-                    lines.push(Line::from(Span::styled(text, style)));
+                    let selected_style = Style::default()
+                        .fg(Color::Black)
+                        .bg(Color::Cyan)
+                        .add_modifier(Modifier::BOLD);
+                    let dim_style = Style::default().fg(Color::DarkGray);
+
+                    let base_style = if selected { selected_style } else { dim_style };
+                    let value_style = if selected { selected_style } else { dim_style };
+                    let icon_style = Style::default().fg(Color::DarkGray);
+
+                    lines.push(Line::from(vec![
+                        Span::styled(format!(" {} {:<10} [", marker, col_label(col)), base_style),
+                        Span::styled(format!("{:^9}", align.label()), value_style),
+                        Span::styled("]", base_style),
+                        Span::styled(" ", base_style),
+                        Span::raw(" "),
+                        Span::styled(icon, icon_style),
+                    ]));
                 }
             }
 
             lines.push(Line::from(""));
             lines.push(Line::from(Span::styled(
-                " Affects header & cell rendering of the queue table.",
+                " ← left · Enter center · → right. Affects header & cells.",
                 Style::default().fg(Color::DarkGray),
             )));
         }

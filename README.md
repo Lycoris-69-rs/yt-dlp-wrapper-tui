@@ -28,9 +28,9 @@ A terminal UI (TUI) for [yt-dlp](https://github.com/yt-dlp/yt-dlp): a convenient
 - `ffmpeg` available in `PATH` (for merging video streams and MP3 conversion);
 - Rust 1.89+ — only needed to build from source (the project uses edition 2024).
 
-## Installation
+## Quick start
 
-### From source
+### Using cargo
 
 ```bash
 git clone https://github.com/Lycoris-69-rs/yt-dlp-wrapper-tui.git
@@ -39,31 +39,15 @@ cargo build --release --locked
 ./target/release/yt-dlp-wrapper-tui
 ```
 
-Or install it into `~/.cargo/bin`:
+### Using pkgbuild
 
 ```bash
-cargo install --path .
-```
-
-### Arch Linux
-
-The repository includes `PKGBUILD` (stable release) and `PKGBUILD-git` (git build).
-
-```bash
+git clone https://github.com/Lycoris-69-rs/yt-dlp-wrapper-tui.git
+cd yt-dlp-wrapper-tui
 makepkg -si
-```
-
-## Running
-
-```bash
 yt-dlp-wrapper-tui
 ```
 
-You can also run it without installing:
-
-```bash
-cargo run --release
-```
 
 ## Keyboard shortcuts
 

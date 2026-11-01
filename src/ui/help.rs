@@ -52,12 +52,13 @@ pub fn draw_help(f: &mut Frame, app: &mut App, area: Rect) {
         (
             " Queue editor",
             &[
-                " Tab          Switch tab (Columns / Widths)",
+                " Tab          Switch tab (Columns / Widths / Style)",
                 " ↑ / ↓        Select column",
-                " ← / →        Move col / adjust width",
+                " ← / →        Move col / width in chars",
                 " Enter/Space  Hide column (Columns tab)",
                 " A/Enter      Toggle AUTO width (Widths tab)",
-                " Shift+←/→    Width ±5",
+                " +/−          Width in weight (Widths tab)",
+                " Shift+←/→    Width ±5 chars",
             ],
         ),
         (
@@ -100,10 +101,11 @@ pub fn draw_help(f: &mut Frame, app: &mut App, area: Rect) {
             " Queue settings — Widths tab",
             &[
                 " ↑ / ↓        Select column",
-                " ← / →        Adjust fixed width (or drop AUTO)",
-                " + / =        Increase weight  (AUTO, +1)",
-                " - / _        Decrease weight  (AUTO, −1)",
-                " Shift +/−    Weight ±5        (AUTO)",
+                " ← / →        Width in chars (switches to fixed)",
+                " Shift+←/→    Width ±5 chars",
+                " + / =        Increase weight (switches to AUTO)",
+                " - / _        Decrease weight (switches to AUTO)",
+                " Shift +/−    Weight ±5",
                 " A / Enter    Toggle AUTO",
             ],
         ),
@@ -111,9 +113,9 @@ pub fn draw_help(f: &mut Frame, app: &mut App, area: Rect) {
             " Queue settings — Style tab",
             &[
                 " ↑ / ↓        Select column",
-                " ← / →        Cycle alignment backward / forward",
-                " Enter/Space  Cycle alignment forward",
-                " Values:      Left · Center · Right",
+                " ←            Align left",
+                " Enter/Space  Align center",
+                " →            Align right",
             ],
         ),
         (
