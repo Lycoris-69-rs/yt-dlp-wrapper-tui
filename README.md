@@ -13,7 +13,10 @@ A terminal UI (TUI) for [yt-dlp](https://github.com/yt-dlp/yt-dlp): a convenient
 - Real-time progress: percentage, speed, and a progress bar.
 - Video titles are fetched with `yt-dlp --get-title`.
 - Queue management: pause, resume, retry failed downloads, remove items, and cancel active downloads.
-- Favorite folders for download destinations and a path picker.
+- Favorite folders for download destinations and a path picker:
+  - pinned paths (`P`) shown in their own `Pinned paths` section;
+  - `Default` / `Selected` / `Selected by default` labels next to paths;
+  - a dedicated pin manager to move paths between categories.
 - Built-in settings (`F2`):
   - defaults for new downloads;
   - extra yt-dlp options: proxy, geo-bypass, cookies, user-agent, rate limit, and custom arguments;
@@ -92,6 +95,29 @@ While editing the URL: `←`/`→` move the cursor, `Home`/`End` jump to the sta
 | `Home` | Jump to the top |
 | `Esc`, `q` | Close |
 
+### Path picker (`Select Path`)
+
+| Key | Action |
+| --- | --- |
+| `↑` / `↓` | Select a path or action |
+| `Enter` | Choose a path / run the highlighted action |
+| `P` | Pin or unpin the highlighted path |
+| `Esc`, `q` | Close |
+
+The picker is split into `Pinned paths:`, `Paths:` and `Actions:` lists. Paths are annotated with a dim
+`Default`, `Selected` or `Selected by default` label.
+
+Actions: `Pin path` (opens the pin manager), `+ Add current path`, `+ Add new path…`,
+`− Select and delete path…`.
+
+### Pin manager (`Pin Paths`)
+
+| Key | Action |
+| --- | --- |
+| `↑` / `↓` | Select a path |
+| `Enter`, `P` | Move the path between the pinned and regular categories |
+| `Esc`, `q` | Back to the path picker |
+
 ## Settings
 
 Open settings with `F2`. There are three sections:
@@ -133,6 +159,7 @@ extra_args = ""
 
 [paths]
 favorites = ["/home/user/Downloads"]
+pinned = []
 
 [status_bar]
 enabled = true
