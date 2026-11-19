@@ -144,12 +144,15 @@ impl App {
                 }
                 FormField::Path => {
                     self.popup = Popup::PathPicker;
-                    self.path_picker_index = self
+                    self.path_picker_last_path = self
                         .config
                         .paths
                         .favorites
                         .iter()
                         .position(|p| p == &self.form.path)
+                        .map(|i| self.config.paths.favorites[i].clone());
+                    self.path_picker_index = self
+                        .path_picker_find_favorite(&self.form.path)
                         .unwrap_or(0);
                 }
                 FormField::Submit => self.submit_form(),

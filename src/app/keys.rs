@@ -36,6 +36,7 @@ impl App {
             Popup::PathPicker => return self.handle_path_picker_key(key).await,
             Popup::PathInput => return self.handle_path_input_key(key).await,
             Popup::PathDelete => return self.handle_path_delete_key(key).await,
+            Popup::PathPin => return self.handle_path_pin_key(key).await,
             Popup::Settings => return self.handle_settings_key(key).await,
             Popup::SettingsDefaults => return self.handle_settings_defaults_key(key).await,
             Popup::SettingsAdvancedInput => {

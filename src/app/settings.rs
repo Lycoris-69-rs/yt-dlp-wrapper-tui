@@ -1,7 +1,7 @@
 use anyhow::Result;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
-use super::App;
+use super::{App, PathPickerEntry};
 use crate::config::{ADVANCED_OPTION_COUNT, AdvancedOptions};
 use crate::queue::Quality;
 
@@ -11,6 +11,7 @@ pub enum Popup {
     PathPicker,
     PathInput,
     PathDelete,
+    PathPin,
     Settings,
     SettingsDefaults,
     SettingsAdvancedInput,
@@ -551,10 +552,82 @@ impl App {
     }
 
     pub(crate) async fn handle_path_picker_key(&mut self, key: KeyEvent) -> Result<()> {
-        let favs_len = self.config.paths.favorites.len();
-        let total = favs_len + 3;
+        let total = self.path_picker_entries().len();
         match key.code {
             KeyCode::Esc | KeyCode::Char('q') => self.popup = Popup::None,
+            KeyCode::Up => {
+                if self.path_picker_index > 0 {
+                    self.path_picker_index -= 1;
+                }
+                self.path_picker_track_path();
+            }
+            KeyCode::Down => {
+                if self.path_picker_index + 1 < total {
+                    self.path_picker_index += 1;
+                }
+                self.path_picker_track_path();
+            }
+            KeyCode::Char('p') | KeyCode::Char('P') => self.path_picker_toggle_pin(),
+            KeyCode::Enter => {
+                let entry = self
+                    .path_picker_entries()
+                    .get(self.path_picker_index)
+                    .copied();
+                match entry {
+                    Some(PathPickerEntry::Pinned { fav_idx })
+                    | Some(PathPickerEntry::Path { fav_idx }) => {
+                        self.form.path = self.config.paths.favorites[fav_idx].clone();
+                        self.popup = Popup::None;
+                        self.status = format!("✅ Path: {}", self.form.path);
+                    }
+                    Some(PathPickerEntry::AddCurrent) => {
+                        let current = self.form.path.clone();
+                        self.config.add_favorite(&current);
+                        let _ = self.config.save();
+                        self.status = format!("✅ Added to favorites: {current}");
+                        self.path_picker_last_path = Some(current.clone());
+                        self.path_picker_index = self
+                            .path_picker_find_favorite(&current)
+                            .unwrap_or(0);
+                    }
+                    Some(PathPickerEntry::AddNew) => {
+                        self.popup = Popup::PathInput;
+                        self.path_input.clear();
+                        self.path_input_cursor = 0;
+                    }
+                    Some(PathPickerEntry::Delete) => {
+                        if self.config.paths.favorites.is_empty() {
+                            self.status = "❌ No favorites to delete".into();
+                        } else {
+                            self.popup = Popup::PathDelete;
+                            self.path_picker_index = 0;
+                        }
+                    }
+                    Some(PathPickerEntry::Pin) => {
+                        self.popup = Popup::PathPin;
+                        let target = self.path_picker_last_path.clone();
+                        self.path_picker_index = target
+                            .as_deref()
+                            .and_then(|p| self.path_picker_find_favorite(p))
+                            .unwrap_or(0);
+                    }
+                    None => {}
+                }
+            }
+            _ => {}
+        }
+        Ok(())
+    }
+
+    pub(crate) async fn handle_path_pin_key(&mut self, key: KeyEvent) -> Result<()> {
+        let total = self.path_pin_entries().len();
+        match key.code {
+            KeyCode::Esc | KeyCode::Char('q') => {
+                self.popup = Popup::PathPicker;
+                self.path_picker_index = self
+                    .path_picker_action_index(PathPickerEntry::Pin)
+                    .unwrap_or(0);
+            }
             KeyCode::Up => {
                 if self.path_picker_index > 0 {
                     self.path_picker_index -= 1;
@@ -565,33 +638,8 @@ impl App {
                     self.path_picker_index += 1;
                 }
             }
-            KeyCode::Enter => {
-                if self.path_picker_index < favs_len {
-                    self.form.path = self.config.paths.favorites[self.path_picker_index].clone();
-                    self.popup = Popup::None;
-                    self.status = format!("✅ Path: {}", self.form.path);
-                } else if self.path_picker_index == favs_len {
-                    let current = self.form.path.clone();
-                    self.config.add_favorite(&current);
-                    let _ = self.config.save();
-                    self.status = format!("✅ Added to favorites: {}", current);
-                    self.path_picker_index = self
-                        .config
-                        .paths
-                        .favorites
-                        .iter()
-                        .position(|p| p == &current)
-                        .unwrap_or(0);
-                } else if self.path_picker_index == favs_len + 1 {
-                    self.popup = Popup::PathInput;
-                    self.path_input.clear();
-                    self.path_input_cursor = 0;
-                } else if self.config.paths.favorites.is_empty() {
-                    self.status = "❌ No favorites to delete".into();
-                } else {
-                    self.popup = Popup::PathDelete;
-                    self.path_picker_index = 0;
-                }
+            KeyCode::Enter | KeyCode::Char('p') | KeyCode::Char('P') => {
+                self.path_picker_toggle_pin();
             }
             _ => {}
         }
@@ -659,7 +707,9 @@ impl App {
         match key.code {
             KeyCode::Esc | KeyCode::Char('q') => {
                 self.popup = Popup::PathPicker;
-                self.path_picker_index = self.config.paths.favorites.len() + 2;
+                self.path_picker_index = self
+                    .path_picker_action_index(PathPickerEntry::Delete)
+                    .unwrap_or(0);
             }
             KeyCode::Up => {
                 if self.path_picker_index > 0 {

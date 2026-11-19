@@ -122,9 +122,21 @@ pub fn draw_help(f: &mut Frame, app: &mut App, area: Rect) {
             " Path picker",
             &[
                 " Enter        Select path",
+                " P            Pin / unpin selected path",
+                " Pinned paths / Paths / Actions",
+                " Pin path     Open pin manager",
                 " + Add current path to favorites",
                 " + Add new path…",
-                " - Select and delete path…",
+                " − Select and delete path…",
+            ],
+        ),
+        (
+            " Pin manager",
+            &[
+                " ↑ / ↓        Select path",
+                " Enter        Move path between categories",
+                " P            Pin / unpin selected path",
+                " Esc          Back to path picker",
             ],
         ),
     ];

@@ -75,5 +75,6 @@ impl Config {
 
     pub fn remove_favorite(&mut self, path: &str) {
         self.paths.favorites.retain(|p| p != path);
+        self.paths.unpin(path);
     }
 }

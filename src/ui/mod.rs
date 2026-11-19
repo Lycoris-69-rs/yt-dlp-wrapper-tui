@@ -46,6 +46,7 @@ pub fn draw(f: &mut Frame, app: &mut App) {
         Popup::PathPicker => path_picker::draw_path_picker(f, app, size),
         Popup::PathInput => path_picker::draw_path_input(f, app, size),
         Popup::PathDelete => path_picker::draw_path_delete(f, app, size),
+        Popup::PathPin => path_picker::draw_path_pin(f, app, size),
         Popup::Settings => settings::draw_settings(f, app, size),
         Popup::SettingsDefaults => settings::draw_settings_defaults(f, app, size),
         Popup::SettingsAdvancedInput => settings::draw_settings_advanced_input(f, app, size),

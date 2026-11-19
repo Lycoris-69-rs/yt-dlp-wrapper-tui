@@ -20,6 +20,29 @@ pub enum Focus {
     Form,
 }
 
+/// A single selectable row inside the "Select path" picker.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PathPickerEntry {
+    Pinned { fav_idx: usize },
+    Path { fav_idx: usize },
+    AddCurrent,
+    AddNew,
+    Delete,
+    Pin,
+}
+
+impl PathPickerEntry {
+    pub fn favorite_idx(self) -> Option<usize> {
+        match self {
+            PathPickerEntry::Pinned { fav_idx } | PathPickerEntry::Path { fav_idx } => Some(fav_idx),
+            PathPickerEntry::AddCurrent
+            | PathPickerEntry::AddNew
+            | PathPickerEntry::Delete
+            | PathPickerEntry::Pin => None,
+        }
+    }
+}
+
 pub struct App {
     pub queue: Vec<QueueItem>,
     pub selected: usize,
@@ -39,6 +62,7 @@ pub struct App {
     pub settings_index: usize,
     pub popup: Popup,
     pub path_picker_index: usize,
+    pub path_picker_last_path: Option<String>,
     pub path_input: String,
     pub path_input_cursor: usize,
     pub status_bar_index: usize,
@@ -75,6 +99,7 @@ impl App {
             settings_index: 0,
             popup: Popup::None,
             path_picker_index: 0,
+            path_picker_last_path: None,
             path_input: String::new(),
             path_input_cursor: 0,
             status_bar_index: 0,
@@ -108,6 +133,95 @@ impl App {
         self.editing_url = self.focus == Focus::Form && self.form.field == FormField::Url;
         if self.editing_url {
             self.form.url_cursor = self.form.url.chars().count();
+        }
+    }
+
+    /// Ordered, selectable rows of the "Select path" picker: pinned favorites
+    /// first, then the remaining paths, then the action buttons.
+    pub(crate) fn path_picker_entries(&self) -> Vec<PathPickerEntry> {
+        let favs = &self.config.paths.favorites;
+        let mut entries = Vec::new();
+        for (i, p) in favs.iter().enumerate() {
+            if self.config.paths.is_pinned(p) {
+                entries.push(PathPickerEntry::Pinned { fav_idx: i });
+            }
+        }
+        for (i, p) in favs.iter().enumerate() {
+            if !self.config.paths.is_pinned(p) {
+                entries.push(PathPickerEntry::Path { fav_idx: i });
+            }
+        }
+        entries.push(PathPickerEntry::Pin);
+        entries.push(PathPickerEntry::AddCurrent);
+        entries.push(PathPickerEntry::AddNew);
+        entries.push(PathPickerEntry::Delete);
+        entries
+    }
+
+    /// Path-only rows for the pin manager (no action buttons).
+    pub(crate) fn path_pin_entries(&self) -> Vec<PathPickerEntry> {
+        self.path_picker_entries()
+            .into_iter()
+            .filter(|e| e.favorite_idx().is_some())
+            .collect()
+    }
+
+    /// Flat entry index for a favorite path (pinned or not).
+    pub(crate) fn path_picker_find_favorite(&self, path: &str) -> Option<usize> {
+        self.path_picker_entries().iter().position(|e| match e {
+            PathPickerEntry::Pinned { fav_idx } | PathPickerEntry::Path { fav_idx } => self
+                .config
+                .paths
+                .favorites
+                .get(*fav_idx)
+                .is_some_and(|p| p == path),
+            _ => false,
+        })
+    }
+
+    /// Flat entry index for a specific action button.
+    pub(crate) fn path_picker_action_index(&self, action: PathPickerEntry) -> Option<usize> {
+        self.path_picker_entries()
+            .iter()
+            .position(|e| *e == action)
+    }
+
+    /// The path the pin toggle should act on: the currently highlighted path,
+    /// or, when an action row is highlighted, the last visited path.
+    pub(crate) fn path_picker_current_path(&self) -> Option<String> {
+        let entries = self.path_picker_entries();
+        if let Some(entry) = entries.get(self.path_picker_index) {
+            if let Some(fav_idx) = entry.favorite_idx() {
+                return self.config.paths.favorites.get(fav_idx).cloned();
+            }
+        }
+        self.path_picker_last_path.clone()
+    }
+
+    pub(crate) fn path_picker_track_path(&mut self) {
+        let entries = self.path_picker_entries();
+        if let Some(entry) = entries.get(self.path_picker_index) {
+            if let Some(fav_idx) = entry.favorite_idx() {
+                self.path_picker_last_path = self.config.paths.favorites.get(fav_idx).cloned();
+            }
+        }
+    }
+
+    pub(crate) fn path_picker_toggle_pin(&mut self) {
+        let Some(target) = self.path_picker_current_path() else {
+            self.status = "❌ Nothing to pin".into();
+            return;
+        };
+        let pinned = self.config.paths.toggle_pin(&target);
+        let _ = self.config.save();
+        self.status = if pinned {
+            format!("📌 Pinned: {target}")
+        } else {
+            format!("📌 Unpinned: {target}")
+        };
+        if let Some(idx) = self.path_picker_find_favorite(&target) {
+            self.path_picker_index = idx;
+            self.path_picker_last_path = Some(target);
         }
     }
 
