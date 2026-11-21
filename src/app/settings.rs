@@ -17,7 +17,6 @@ pub enum Popup {
     SettingsAdvancedInput,
     SettingsStatusBar,
     SettingsQueue,
-    SettingsPathPicker,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -157,14 +156,22 @@ impl App {
                             let _ = self.config.save();
                         }
                         3 => {
-                            self.popup = Popup::SettingsPathPicker;
-                            self.path_picker_index = self
+                            self.popup = Popup::PathPicker;
+                            self.path_picker_from_settings = true;
+                            let default = self.config.general.default_path.clone();
+                            self.path_picker_last_path = if self
                                 .config
                                 .paths
                                 .favorites
                                 .iter()
-                                .position(|p| p == &self.config.general.default_path)
-                                .unwrap_or(0);
+                                .any(|p| p == &default)
+                            {
+                                Some(default.clone())
+                            } else {
+                                None
+                            };
+                            self.path_picker_index =
+                                self.path_picker_find_favorite(&default).unwrap_or(0);
                         }
                         _ => {}
                     },
@@ -514,47 +521,16 @@ impl App {
         }
     }
 
-    pub(crate) async fn handle_settings_path_picker_key(&mut self, key: KeyEvent) -> Result<()> {
-        let favs_len = self.config.paths.favorites.len();
-        let total = favs_len + 1;
-
-        match key.code {
-            KeyCode::Esc | KeyCode::Char('q') => self.popup = Popup::SettingsDefaults,
-            KeyCode::Up => {
-                if self.path_picker_index > 0 {
-                    self.path_picker_index -= 1;
-                }
-            }
-            KeyCode::Down => {
-                if self.path_picker_index + 1 < total {
-                    self.path_picker_index += 1;
-                }
-            }
-            KeyCode::Enter => {
-                if self.path_picker_index < favs_len {
-                    self.config.general.default_path =
-                        self.config.paths.favorites[self.path_picker_index].clone();
-                    let _ = self.config.save();
-                    self.popup = Popup::SettingsDefaults;
-                    self.status = format!("✅ Default path: {}", self.config.general.default_path);
-                } else if self.path_picker_index == favs_len {
-                    let current = self.form.path.clone();
-                    self.config.add_favorite(&current);
-                    let _ = self.config.save();
-                    self.config.general.default_path = current;
-                    self.popup = Popup::SettingsDefaults;
-                    self.status = "✅ Default path set & added to favorites".into();
-                }
-            }
-            _ => {}
-        }
-        Ok(())
-    }
-
     pub(crate) async fn handle_path_picker_key(&mut self, key: KeyEvent) -> Result<()> {
         let total = self.path_picker_entries().len();
         match key.code {
-            KeyCode::Esc | KeyCode::Char('q') => self.popup = Popup::None,
+            KeyCode::Esc | KeyCode::Char('q') => {
+                self.popup = if self.path_picker_from_settings {
+                    Popup::SettingsDefaults
+                } else {
+                    Popup::None
+                };
+            }
             KeyCode::Up => {
                 if self.path_picker_index > 0 {
                     self.path_picker_index -= 1;
@@ -576,9 +552,17 @@ impl App {
                 match entry {
                     Some(PathPickerEntry::Pinned { fav_idx })
                     | Some(PathPickerEntry::Path { fav_idx }) => {
-                        self.form.path = self.config.paths.favorites[fav_idx].clone();
-                        self.popup = Popup::None;
-                        self.status = format!("✅ Path: {}", self.form.path);
+                        let path = self.config.paths.favorites[fav_idx].clone();
+                        if self.path_picker_from_settings {
+                            self.config.general.default_path = path.clone();
+                            let _ = self.config.save();
+                            self.popup = Popup::SettingsDefaults;
+                            self.status = format!("✅ Default path: {path}");
+                        } else {
+                            self.form.path = path.clone();
+                            self.popup = Popup::None;
+                            self.status = format!("✅ Path: {path}");
+                        }
                     }
                     Some(PathPickerEntry::AddCurrent) => {
                         let current = self.form.path.clone();
@@ -648,7 +632,13 @@ impl App {
 
     pub(crate) async fn handle_path_input_key(&mut self, key: KeyEvent) -> Result<()> {
         match key.code {
-            KeyCode::Esc => self.popup = Popup::None,
+            KeyCode::Esc => {
+                self.popup = if self.path_picker_from_settings {
+                    Popup::PathPicker
+                } else {
+                    Popup::None
+                };
+            }
             KeyCode::Enter => {
                 let path = self.path_input.trim().to_string();
                 if path.is_empty() {
@@ -656,10 +646,18 @@ impl App {
                     return Ok(());
                 }
                 self.config.add_favorite(&path);
+                if self.path_picker_from_settings {
+                    self.config.general.default_path = path.clone();
+                }
                 let _ = self.config.save();
-                self.form.path = path.clone();
-                self.popup = Popup::None;
-                self.status = format!("✅ Path: {}", path);
+                if self.path_picker_from_settings {
+                    self.popup = Popup::SettingsDefaults;
+                    self.status = format!("✅ Default path: {path}");
+                } else {
+                    self.form.path = path.clone();
+                    self.popup = Popup::None;
+                    self.status = format!("✅ Path: {path}");
+                }
             }
             KeyCode::Char(c) => {
                 let byte_idx = self.path_input_cursor.min(self.path_input.len());

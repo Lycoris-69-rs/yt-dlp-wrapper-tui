@@ -144,6 +144,7 @@ impl App {
                 }
                 FormField::Path => {
                     self.popup = Popup::PathPicker;
+                    self.path_picker_from_settings = false;
                     self.path_picker_last_path = self
                         .config
                         .paths

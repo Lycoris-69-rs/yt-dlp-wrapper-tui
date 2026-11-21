@@ -44,7 +44,6 @@ impl App {
             }
             Popup::SettingsStatusBar => return self.handle_settings_status_bar_key(key).await,
             Popup::SettingsQueue => return self.handle_settings_queue_key(key).await,
-            Popup::SettingsPathPicker => return self.handle_settings_path_picker_key(key).await,
             Popup::None => {}
         }
 

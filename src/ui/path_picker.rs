@@ -29,11 +29,11 @@ fn label_style(highlighted: bool) -> Style {
 
 fn path_suffix(
     path: &str,
-    form_path: &str,
+    selected: Option<&str>,
     default_path: &str,
     highlighted: bool,
 ) -> Vec<Span<'static>> {
-    let is_selected = path == form_path;
+    let is_selected = selected == Some(path);
     let is_default = path == default_path;
     let text = match (is_selected, is_default) {
         (true, true) => "Selected by default",
@@ -44,7 +44,7 @@ fn path_suffix(
     vec![Span::styled(text, label_style(highlighted))]
 }
 
-fn path_row(app: &App, fav_idx: usize, highlighted: bool) -> Line<'static> {
+fn path_row(app: &App, fav_idx: usize, highlighted: bool, settings_mode: bool) -> Line<'static> {
     let path = &app.config.paths.favorites[fav_idx];
     let marker = if highlighted { "▶" } else { " " };
     let base = if highlighted {
@@ -56,7 +56,17 @@ fn path_row(app: &App, fav_idx: usize, highlighted: bool) -> Line<'static> {
         Style::default()
     };
     let mut spans = vec![Span::styled(format!(" {marker} {path}"), base)];
-    let suffix = path_suffix(path, &app.form.path, &app.config.general.default_path, highlighted);
+    let selected = if settings_mode {
+        None
+    } else {
+        Some(app.form.path.as_str())
+    };
+    let suffix = path_suffix(
+        path,
+        selected,
+        &app.config.general.default_path,
+        highlighted,
+    );
     if !suffix.is_empty() {
         spans.push(Span::styled("  ", base));
         spans.extend(suffix);
@@ -112,7 +122,7 @@ pub fn draw_path_picker(f: &mut Frame, app: &mut App, area: Rect) {
         let highlighted = i == app.path_picker_index;
         let line = match entry {
             PathPickerEntry::Pinned { fav_idx } | PathPickerEntry::Path { fav_idx } => {
-                path_row(app, *fav_idx, highlighted)
+                path_row(app, *fav_idx, highlighted, app.path_picker_from_settings)
             }
             PathPickerEntry::AddCurrent => action_row(
                 format!(" + Add current path: {} ", app.form.path),
@@ -170,7 +180,7 @@ pub fn draw_path_pin(f: &mut Frame, app: &mut App, area: Rect) {
             }
             let highlighted = i == app.path_picker_index;
             if let Some(fav_idx) = entry.favorite_idx() {
-                lines.push(path_row(app, fav_idx, highlighted));
+                lines.push(path_row(app, fav_idx, highlighted, app.path_picker_from_settings));
             }
         }
     }

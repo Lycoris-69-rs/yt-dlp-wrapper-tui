@@ -52,7 +52,6 @@ pub fn draw(f: &mut Frame, app: &mut App) {
         Popup::SettingsAdvancedInput => settings::draw_settings_advanced_input(f, app, size),
         Popup::SettingsStatusBar => settings::draw_settings_status_bar(f, app, size),
         Popup::SettingsQueue => settings::draw_settings_queue(f, app, size),
-        Popup::SettingsPathPicker => settings::draw_settings_path_picker(f, app, size),
         Popup::None => {}
     }
 }
