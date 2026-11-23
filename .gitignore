@@ -2,3 +2,4 @@
 /pkg
 *.pkg.tar.zst
 *.tar.gz
+/yt-dlp-wrapper-tui-linux-x86_64

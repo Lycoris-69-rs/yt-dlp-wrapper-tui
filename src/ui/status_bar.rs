@@ -28,6 +28,8 @@ pub fn draw_status(f: &mut Frame, app: &App, area: Rect) {
         spans.push(Span::raw(" help "));
         spans.push(Span::styled(" F2 ", hint_style));
         spans.push(Span::raw(" settings "));
+        spans.push(Span::styled(" F3 ", hint_style));
+        spans.push(Span::raw(" logs "));
         spans.push(Span::styled(" Tab ", hint_style));
         spans.push(Span::raw(" focus "));
     }

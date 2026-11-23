@@ -11,6 +11,7 @@ A terminal UI (TUI) for [yt-dlp](https://github.com/yt-dlp/yt-dlp): a convenient
 - Download a full playlist or a single video.
 - Sequential queue: items are processed one at a time.
 - Real-time progress: percentage, speed, and a progress bar.
+- Long titles, URLs, paths, and statuses scroll horizontally inside their columns when they do not fit.
 - Video titles are fetched with `yt-dlp --get-title`.
 - Queue management: pause, resume, retry failed downloads, remove items, and cancel active downloads.
 - Favorite folders for download destinations and a path picker:
@@ -24,6 +25,7 @@ A terminal UI (TUI) for [yt-dlp](https://github.com/yt-dlp/yt-dlp): a convenient
   - queue table configuration: visible columns, order, fixed width/weight, and alignment.
 - All settings changes are saved to `config.toml` immediately.
 - Built-in keyboard shortcut help (`F1`).
+- Live download logs viewer (`F3`) with auto-follow and scrolling.
 
 ## Requirements
 
@@ -60,6 +62,7 @@ yt-dlp-wrapper-tui
 | --- | --- |
 | `F1` | Open/close help |
 | `F2` | Open/close settings |
+| `F3` | Open/close download logs |
 | `Tab` | Switch focus between the queue and the form |
 | `Esc` | Close a menu/popup or leave URL editing |
 | `Ctrl+C` | Quit the application |
@@ -83,8 +86,9 @@ While editing the URL: `←`/`→` move the cursor, `Home`/`End` jump to the sta
 | --- | --- |
 | `↑` / `↓` | Select an item |
 | `d` / `Delete` | Remove an item; an active download will be cancelled |
-| `r` | Retry a failed download |
-| `s` | Pause/resume the queue |
+| `r` | Retry the selected download |
+| `p` | Pause / resume the queue |
+| `s` | On a running item — skip it (pause, start the next); on a pending item — stop the current download and start this one |
 
 ### Help
 
@@ -94,6 +98,18 @@ While editing the URL: `←`/`→` move the cursor, `Home`/`End` jump to the sta
 | `PageUp` / `PageDown` | Scroll by 10 lines |
 | `Home` | Jump to the top |
 | `Esc`, `q` | Close |
+
+### Logs (`F3`)
+
+| Key | Action |
+| --- | --- |
+| `↑` / `↓` | Scroll |
+| `PageUp` / `PageDown` | Scroll by 10 lines |
+| `Home` | Jump to the first line |
+| `End` | Follow the latest output |
+| `Esc`, `q` | Close |
+
+The viewer shows the raw `yt-dlp` output per queue item (`#id line`) and follows new lines unless you scroll up.
 
 ### Path picker (`Select Path`)
 
@@ -126,7 +142,8 @@ Open settings with `F2`. There are three sections:
   - *General* — default download type, quality, playlist behavior, and path;
   - *Advanced* — proxy, geo-bypass, cookies, user-agent, rate limit, and extra yt-dlp arguments.
 - **Status Bar** — visibility of the status bar and its individual elements.
-- **Queue** — table columns:
+- **Queue** — table:
+  - *General* — marquee scroll offset and side padding;
   - *Columns* — show/hide columns and change their order;
   - *Widths* — fixed width or automatic (`AUTO`) width with a weight;
   - *Style* — content alignment (Left / Center / Right).
@@ -170,6 +187,8 @@ show_status_message = true
 
 [queue_table]
 columns = ["num", "name", "url", "progress", "percent", "status"]
+scroll_offset = 1
+side_padding = 1
 
 [queue_table.widths]
 num = 1
@@ -203,7 +222,7 @@ percent = "Left"
 status = "Left"
 ```
 
-Available columns: `num`, `added`, `name`, `url`, `mode`, `quality`, `status`, `progress`, `percent`, `speed`.
+Available columns: `num`, `added`, `name`, `url`, `path`, `mode`, `quality`, `status`, `progress`, `percent`, `speed`.
 
 ## How it works
 

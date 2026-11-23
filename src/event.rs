@@ -5,9 +5,13 @@ use tokio::sync::mpsc;
 
 #[derive(Debug, Clone)]
 pub enum DownloadEvent {
-    Started(usize),
+    Started {
+        id: usize,
+        run_id: u64,
+    },
     Progress {
         id: usize,
+        run_id: u64,
         percent: f32,
         speed: String,
     },
@@ -17,6 +21,7 @@ pub enum DownloadEvent {
     },
     Finished {
         id: usize,
+        run_id: u64,
         success: bool,
         message: String,
     },

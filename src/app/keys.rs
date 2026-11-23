@@ -26,9 +26,22 @@ impl App {
             }
             return Ok(());
         }
+        if key.code == KeyCode::F(3) {
+            if self.show_logs {
+                self.show_logs = false;
+            } else {
+                self.open_logs();
+            }
+            return Ok(());
+        }
 
         if self.show_help {
             self.handle_help_key(key);
+            return Ok(());
+        }
+
+        if self.show_logs {
+            self.handle_logs_key(key);
             return Ok(());
         }
 

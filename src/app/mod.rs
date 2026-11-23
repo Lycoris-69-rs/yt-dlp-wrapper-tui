@@ -1,6 +1,7 @@
 pub mod form;
 pub mod help;
 pub mod keys;
+pub mod logs;
 pub mod queue;
 pub mod settings;
 
@@ -47,6 +48,8 @@ pub struct App {
     pub queue: Vec<QueueItem>,
     pub selected: usize,
     pub focus: Focus,
+    pub marquee_offset: usize,
+    pub anim_frame: usize,
     pub form: Form,
     pub config: Config,
     pub status: String,
@@ -58,6 +61,10 @@ pub struct App {
 
     pub show_help: bool,
     pub help_scroll: u16,
+
+    pub show_logs: bool,
+    pub logs_scroll: u16,
+    pub logs_follow: bool,
 
     pub settings_index: usize,
     pub popup: Popup,
@@ -77,6 +84,9 @@ pub struct App {
 
     pub editing_url: bool,
     pub active_token: Option<CancellationToken>,
+    pub active_id: Option<usize>,
+    pub active_gen: Option<u64>,
+    pub next_gen: u64,
 }
 
 impl App {
@@ -87,6 +97,8 @@ impl App {
             queue: Vec::new(),
             selected: 0,
             focus: Focus::Form,
+            marquee_offset: 0,
+            anim_frame: 0,
             form,
             config,
             status: "Ready".into(),
@@ -97,6 +109,9 @@ impl App {
             logs: Vec::new(),
             show_help: false,
             help_scroll: 0,
+            show_logs: false,
+            logs_scroll: 0,
+            logs_follow: true,
             settings_index: 0,
             popup: Popup::None,
             path_picker_index: 0,
@@ -114,6 +129,9 @@ impl App {
             queue_table_index: 0,
             editing_url: false,
             active_token: None,
+            active_id: None,
+            active_gen: None,
+            next_gen: 1,
         };
         app.sync_url_editing();
         app
@@ -129,7 +147,13 @@ impl App {
         Ok(())
     }
 
-    pub async fn on_tick(&mut self) {}
+    pub async fn on_tick(&mut self) {
+        // Advance the horizontal marquee used for cells wider than their column.
+        let step = self.config.queue_table.scroll_offset.max(1) as usize;
+        self.marquee_offset = self.marquee_offset.wrapping_add(step);
+        // Advance the "fetching title" spinner.
+        self.anim_frame = self.anim_frame.wrapping_add(1);
+    }
 
     pub(crate) fn sync_url_editing(&mut self) {
         self.editing_url = self.focus == Focus::Form && self.form.field == FormField::Url;
@@ -230,6 +254,15 @@ impl App {
     pub(crate) fn open_help(&mut self) {
         self.show_help = true;
         self.help_scroll = 0;
+        self.show_logs = false;
+        self.popup = Popup::None;
+    }
+
+    pub(crate) fn open_logs(&mut self) {
+        self.show_logs = true;
+        self.show_help = false;
+        self.logs_scroll = 0;
+        self.logs_follow = true;
         self.popup = Popup::None;
     }
 
@@ -237,6 +270,7 @@ impl App {
         self.popup = Popup::Settings;
         self.settings_index = 0;
         self.show_help = false;
+        self.show_logs = false;
     }
 
     pub(crate) fn submit_form(&mut self) {
@@ -286,6 +320,9 @@ impl App {
         if !self.queue_running {
             return;
         }
+        if self.active_id.is_some() {
+            return;
+        }
         if self
             .queue
             .iter()
@@ -300,27 +337,70 @@ impl App {
         else {
             return;
         };
+        self.start_item(idx);
+    }
 
-        self.queue[idx].state = ItemState::Downloading {
+    pub(crate) fn start_item(&mut self, idx: usize) {
+        let Some(item) = self.queue.get_mut(idx) else {
+            return;
+        };
+        item.state = ItemState::Downloading {
             percent: 0.0,
             speed: "—".into(),
         };
-        let item = self.queue[idx].clone();
+        let id = item.id;
+        let item = item.clone();
         let tx = self.event_tx.clone();
         let token = CancellationToken::new();
+        let run_id = self.next_gen;
+        self.next_gen = self.next_gen.wrapping_add(1);
         self.active_token = Some(token.clone());
+        self.active_id = Some(id);
+        self.active_gen = Some(run_id);
 
         tokio::spawn(async move {
-            crate::downloader::run_download(item, tx, token).await;
+            crate::downloader::run_download(item, tx, token, run_id).await;
         });
+    }
+
+    /// Cancels the currently running download and puts its item back to
+    /// `Pending`. Returns the id of the cancelled item, if any.
+    pub(crate) fn cancel_active(&mut self) -> Option<usize> {
+        let id = self.active_id.take().or_else(|| {
+            self.queue
+                .iter()
+                .find(|i| matches!(i.state, ItemState::Downloading { .. }))
+                .map(|i| i.id)
+        });
+        if let Some(token) = self.active_token.take() {
+            token.cancel();
+        }
+        self.active_gen = None;
+        if let Some(id) = id {
+            if let Some(item) = self.queue.iter_mut().find(|i| i.id == id) {
+                item.state = ItemState::Pending;
+            }
+        }
+        id
     }
 
     pub(crate) async fn handle_download_event(&mut self, ev: DownloadEvent) {
         match ev {
-            DownloadEvent::Started(id) => self.status = format!("Downloading #{}", id),
-            DownloadEvent::Progress { id, percent, speed } => {
-                if let Some(item) = self.queue.iter_mut().find(|i| i.id == id) {
-                    item.state = ItemState::Downloading { percent, speed };
+            DownloadEvent::Started { id, run_id } => {
+                if self.active_gen == Some(run_id) && self.active_id == Some(id) {
+                    self.status = format!("Downloading #{}", id);
+                }
+            }
+            DownloadEvent::Progress {
+                id,
+                run_id,
+                percent,
+                speed,
+            } => {
+                if self.active_gen == Some(run_id) && self.active_id == Some(id) {
+                    if let Some(item) = self.queue.iter_mut().find(|i| i.id == id) {
+                        item.state = ItemState::Downloading { percent, speed };
+                    }
                 }
             }
             DownloadEvent::Log { id, line } => {
@@ -331,9 +411,18 @@ impl App {
             }
             DownloadEvent::Finished {
                 id,
+                run_id,
                 success,
                 message,
             } => {
+                // Ignore the tail of a download that was cancelled (paused,
+                // skipped or deleted) — a newer item may already be running.
+                if self.active_gen != Some(run_id) {
+                    return;
+                }
+                self.active_gen = None;
+                self.active_id = None;
+                self.active_token = None;
                 if let Some(item) = self.queue.iter_mut().find(|i| i.id == id) {
                     item.state = if success {
                         ItemState::Done
@@ -341,7 +430,6 @@ impl App {
                         ItemState::Failed(message)
                     };
                 }
-                self.active_token = None;
                 self.start_next();
             }
         }

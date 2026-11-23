@@ -1,6 +1,7 @@
 pub mod common;
 pub mod form;
 pub mod help;
+pub mod logs;
 pub mod path_picker;
 pub mod queue_table;
 pub mod settings;
@@ -53,5 +54,9 @@ pub fn draw(f: &mut Frame, app: &mut App) {
         Popup::SettingsStatusBar => settings::draw_settings_status_bar(f, app, size),
         Popup::SettingsQueue => settings::draw_settings_queue(f, app, size),
         Popup::None => {}
+    }
+
+    if app.show_logs {
+        logs::draw_logs(f, app, size);
     }
 }

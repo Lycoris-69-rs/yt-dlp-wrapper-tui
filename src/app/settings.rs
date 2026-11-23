@@ -45,13 +45,19 @@ impl DefaultsTab {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum QueueTab {
+    General,
     Columns,
     Widths,
     Style,
 }
 
 impl QueueTab {
-    const ALL: [QueueTab; 3] = [QueueTab::Columns, QueueTab::Widths, QueueTab::Style];
+    const ALL: [QueueTab; 4] = [
+        QueueTab::General,
+        QueueTab::Columns,
+        QueueTab::Widths,
+        QueueTab::Style,
+    ];
     pub(crate) fn next(self) -> Self {
         let i = Self::ALL.iter().position(|&t| t == self).unwrap_or(0);
         Self::ALL[(i + 1) % Self::ALL.len()]
@@ -62,6 +68,7 @@ impl QueueTab {
     }
     pub fn label(&self) -> &'static str {
         match self {
+            QueueTab::General => "General",
             QueueTab::Columns => "Columns",
             QueueTab::Widths => "Widths",
             QueueTab::Style => "Style",
@@ -98,7 +105,7 @@ impl App {
                 }
                 2 => {
                     self.popup = Popup::SettingsQueue;
-                    self.queue_tab = QueueTab::Columns;
+                    self.queue_tab = QueueTab::General;
                     self.queue_table_index = 0;
                 }
                 _ => {}
@@ -314,6 +321,63 @@ impl App {
         }
 
         match self.queue_tab {
+            QueueTab::General => {
+                const LAST_IDX: usize = 1;
+                match key.code {
+                    KeyCode::Esc | KeyCode::Char('q') => self.popup = Popup::Settings,
+                    KeyCode::Up => {
+                        if self.queue_table_index > 0 {
+                            self.queue_table_index -= 1;
+                        }
+                    }
+                    KeyCode::Down => {
+                        if self.queue_table_index < LAST_IDX {
+                            self.queue_table_index += 1;
+                        }
+                    }
+                    KeyCode::Left | KeyCode::Char('-') => match self.queue_table_index {
+                        0 => {
+                            let v = self.config.queue_table.bump_scroll_offset(-1);
+                            let _ = self.config.save();
+                            self.status = format!("Scroll offset: {v}");
+                        }
+                        1 => {
+                            let v = self.config.queue_table.bump_side_padding(-1);
+                            let _ = self.config.save();
+                            self.status = format!("Side padding: {v}");
+                        }
+                        _ => {}
+                    },
+                    KeyCode::Right | KeyCode::Char('+') | KeyCode::Char('=') => {
+                        match self.queue_table_index {
+                            0 => {
+                                let v = self.config.queue_table.bump_scroll_offset(1);
+                                let _ = self.config.save();
+                                self.status = format!("Scroll offset: {v}");
+                            }
+                            1 => {
+                                let v = self.config.queue_table.bump_side_padding(1);
+                                let _ = self.config.save();
+                                self.status = format!("Side padding: {v}");
+                            }
+                            _ => {}
+                        }
+                    }
+                    KeyCode::Enter | KeyCode::Char(' ') => {
+                        if self.queue_table_index == 1 {
+                            let v = self.config.queue_table.bump_side_padding(1);
+                            let _ = self.config.save();
+                            self.status = format!("Side padding: {v}");
+                        } else {
+                            let v = self.config.queue_table.bump_scroll_offset(1);
+                            let _ = self.config.save();
+                            self.status = format!("Scroll offset: {v}");
+                        }
+                    }
+                    _ => {}
+                }
+                Ok(())
+            }
             QueueTab::Columns => {
                 use crate::config::ALL_COLUMNS;
                 let vis = self.config.queue_table.columns.clone();
@@ -358,23 +422,40 @@ impl App {
                     KeyCode::Enter | KeyCode::Char(' ') => {
                         if self.queue_table_index < vis_len {
                             if self.config.queue_table.columns.len() > 1 {
-                                self.config
+                                let hidden = self
+                                    .config
                                     .queue_table
-                                    .columns
-                                    .remove(self.queue_table_index);
-                                if total > 0 && self.queue_table_index >= total {
-                                    self.queue_table_index = total - 1;
-                                }
+                                    .hide_column(self.queue_table_index);
                                 let _ = self.config.save();
+                                // Follow the column into the Hidden section.
+                                if let Some(col) = hidden {
+                                    let vis_len = self.config.queue_table.columns.len();
+                                    if let Some(h_idx) = self
+                                        .config
+                                        .queue_table
+                                        .hidden_columns()
+                                        .iter()
+                                        .position(|c| *c == col)
+                                    {
+                                        self.queue_table_index = vis_len + h_idx;
+                                    }
+                                }
                             }
                         } else {
                             let h_idx = self.queue_table_index - vis_len;
-                            if let Some(col) = hidden_cols.get(h_idx) {
-                                self.config.queue_table.add_column(col);
-                                if total > 0 && self.queue_table_index >= total {
-                                    self.queue_table_index = total - 1;
-                                }
+                            if let Some(col) = hidden_cols.get(h_idx).copied() {
+                                self.config.queue_table.restore_column(col);
                                 let _ = self.config.save();
+                                // Follow the column into the Visible section.
+                                if let Some(idx) = self
+                                    .config
+                                    .queue_table
+                                    .columns
+                                    .iter()
+                                    .position(|c| c == col)
+                                {
+                                    self.queue_table_index = idx;
+                                }
                             }
                         }
                     }

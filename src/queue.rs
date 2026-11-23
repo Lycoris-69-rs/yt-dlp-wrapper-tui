@@ -123,8 +123,4 @@ impl QueueItem {
             _ => "--:--:--".to_string(),
         }
     }
-
-    pub fn display_name(&self) -> String {
-        self.title.clone().unwrap_or_else(|| "…".to_string())
-    }
 }

@@ -22,6 +22,7 @@ pub fn draw_help(f: &mut Frame, app: &mut App, area: Rect) {
             &[
                 " F1            Toggle this help",
                 " F2            Toggle settings",
+                " F3            Toggle download logs",
                 " Esc           Close menu",
                 " Ctrl+C        Quit",
                 " Tab           Switch focus (Queue / Form)",
@@ -50,9 +51,19 @@ pub fn draw_help(f: &mut Frame, app: &mut App, area: Rect) {
             ],
         ),
         (
+            " Queue",
+            &[
+                " ↑ / ↓        Select an item",
+                " d / Delete   Remove item (cancels if active)",
+                " r            Retry the selected download",
+                " p            Pause / resume the queue",
+                " s            Running item: skip · pending item: start now",
+            ],
+        ),
+        (
             " Queue editor",
             &[
-                " Tab          Switch tab (Columns / Widths / Style)",
+                " Tab          Switch tab (General / Columns / Widths / Style)",
                 " ↑ / ↓        Select column",
                 " ← / →        Move col / width in chars",
                 " Enter/Space  Hide column (Columns tab)",
@@ -89,9 +100,18 @@ pub fn draw_help(f: &mut Frame, app: &mut App, area: Rect) {
             ],
         ),
         (
+            " Queue settings — General tab",
+            &[
+                " ↑ / ↓        Select setting",
+                " ← / →        Decrease / increase value",
+                " Scroll offset — marquee chars per tick (1..20)",
+                " Side padding  — spaces on each side (0..10)",
+            ],
+        ),
+        (
             " Queue settings — Columns tab",
             &[
-                " Tab          Switch tab (Columns / Widths / Style)",
+                " Tab          Switch tab (General / Columns / Widths / Style)",
                 " ↑ / ↓        Select column",
                 " ← / →        Move column left / right",
                 " Enter/Space  Hide column",
@@ -137,6 +157,16 @@ pub fn draw_help(f: &mut Frame, app: &mut App, area: Rect) {
                 " Enter        Move path between categories",
                 " P            Pin / unpin selected path",
                 " Esc          Back to path picker",
+            ],
+        ),
+        (
+            " Logs",
+            &[
+                " F3           Toggle download logs",
+                " ↑ / ↓        Scroll",
+                " PageUp/PageDown  Scroll by 10 lines",
+                " Home / End   First line / follow latest",
+                " Esc, q       Close",
             ],
         ),
     ];

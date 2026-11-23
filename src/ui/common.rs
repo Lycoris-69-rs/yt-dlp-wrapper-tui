@@ -51,6 +51,7 @@ pub fn col_label(col: &str) -> &'static str {
         "added" => "Added",
         "name" => "Name",
         "url" => "URL",
+        "path" => "Path",
         "mode" => "Mode",
         "quality" => "Quality",
         "status" => "Status",
@@ -80,6 +81,39 @@ pub fn truncate(s: &str, max: usize) -> String {
         out.push(ch);
     }
     out.push_str("...");
+    out
+}
+
+/// Horizontal marquee window of `s` that is at most `width` display columns
+/// wide. Starting at `offset` (in characters), the text scrolls continuously
+/// and wraps around with a small gap. Used when a cell is wider than its column.
+pub fn marquee(s: &str, width: usize, offset: usize) -> String {
+    if width == 0 {
+        return String::new();
+    }
+    if s.width() <= width {
+        return s.to_string();
+    }
+    const GAP: &str = "   ";
+    let chars: Vec<char> = s.chars().chain(GAP.chars()).collect();
+    if chars.is_empty() {
+        return String::new();
+    }
+
+    let mut out = String::new();
+    let mut budget = width;
+    let mut i = offset % chars.len();
+    while budget > 0 {
+        let ch = chars[i % chars.len()];
+        let cw = ch.width().unwrap_or(0);
+        if cw > budget {
+            out.push_str(&" ".repeat(budget));
+            break;
+        }
+        out.push(ch);
+        budget -= cw;
+        i += 1;
+    }
     out
 }
 

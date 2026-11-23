@@ -42,6 +42,7 @@ pub async fn run_download(
     item: QueueItem,
     tx: mpsc::UnboundedSender<AppEvent>,
     token: CancellationToken,
+    run_id: u64,
 ) {
     let mut args: Vec<String> = Vec::new();
 
@@ -97,7 +98,10 @@ pub async fn run_download(
     args.push(format!("{}/%(title)s.%(ext)s", item.path));
     args.push(item.url.clone());
 
-    let _ = tx.send(AppEvent::Download(DownloadEvent::Started(item.id)));
+    let _ = tx.send(AppEvent::Download(DownloadEvent::Started {
+        id: item.id,
+        run_id,
+    }));
 
     let mut child = match Command::new("yt-dlp")
         .args(&args)
@@ -110,6 +114,7 @@ pub async fn run_download(
         Err(e) => {
             let _ = tx.send(AppEvent::Download(DownloadEvent::Finished {
                 id: item.id,
+                run_id,
                 success: false,
                 message: format!("Cannot spawn yt-dlp: {}", e),
             }));
@@ -144,6 +149,7 @@ pub async fn run_download(
                                 let _ = tx.send(AppEvent::Download(
                                     DownloadEvent::Progress {
                                         id: item.id,
+                                        run_id,
                                         percent: pct,
                                         speed,
                                     },
@@ -169,6 +175,7 @@ pub async fn run_download(
 
     let _ = tx.send(AppEvent::Download(DownloadEvent::Finished {
         id: item.id,
+        run_id,
         success,
         message: if success {
             "OK".into()

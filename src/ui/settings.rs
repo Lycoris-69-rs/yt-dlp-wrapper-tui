@@ -255,7 +255,12 @@ pub fn draw_settings_queue(f: &mut Frame, app: &mut App, area: Rect) {
     let cfg = &app.config.queue_table;
 
     let mut tabs: Vec<Span> = Vec::new();
-    let all_tabs = [QueueTab::Columns, QueueTab::Widths, QueueTab::Style];
+    let all_tabs = [
+        QueueTab::General,
+        QueueTab::Columns,
+        QueueTab::Widths,
+        QueueTab::Style,
+    ];
     for (i, t) in all_tabs.iter().enumerate() {
         let active = *t == app.queue_tab;
         let style = if active {
@@ -275,6 +280,42 @@ pub fn draw_settings_queue(f: &mut Frame, app: &mut App, area: Rect) {
     let mut lines: Vec<Line> = vec![Line::from(tabs), Line::from("")];
 
     match app.queue_tab {
+        QueueTab::General => {
+            lines.push(Line::from(Span::styled(
+                " Table",
+                Style::default()
+                    .fg(Color::Cyan)
+                    .add_modifier(Modifier::BOLD),
+            )));
+
+            let items = [
+                format!(" Scroll offset:  [{}]", cfg.scroll_offset),
+                format!(" Side padding:   [{}]", cfg.side_padding),
+            ];
+            for (i, item) in items.iter().enumerate() {
+                if i == app.queue_table_index {
+                    lines.push(Line::from(Span::styled(
+                        format!(" ▶{}", item),
+                        Style::default()
+                            .fg(Color::Black)
+                            .bg(Color::Cyan)
+                            .add_modifier(Modifier::BOLD),
+                    )));
+                } else {
+                    lines.push(Line::from(format!("  {}", item)));
+                }
+            }
+
+            lines.push(Line::from(""));
+            lines.push(Line::from(Span::styled(
+                " ←/→ change value · scroll offset — chars per tick,",
+                Style::default().fg(Color::DarkGray),
+            )));
+            lines.push(Line::from(Span::styled(
+                " side padding — spaces on each side (even total).",
+                Style::default().fg(Color::DarkGray),
+            )));
+        }
         QueueTab::Columns => {
             let vis = &cfg.columns;
             let hidden: Vec<&str> = ALL_COLUMNS

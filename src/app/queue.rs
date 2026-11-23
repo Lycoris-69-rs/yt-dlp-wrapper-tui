@@ -19,39 +19,93 @@ impl App {
             }
             KeyCode::Char('d') | KeyCode::Delete => {
                 if !self.queue.is_empty() && self.selected < self.queue.len() {
+                    let id = self.queue[self.selected].id;
                     let is_downloading = matches!(
                         self.queue[self.selected].state,
                         ItemState::Downloading { .. }
                     );
+                    if is_downloading && self.active_id == Some(id) {
+                        if let Some(token) = self.active_token.take() {
+                            token.cancel();
+                        }
+                        self.active_id = None;
+                        self.active_gen = None;
+                    }
                     self.queue.remove(self.selected);
                     if self.selected >= self.queue.len() && !self.queue.is_empty() {
                         self.selected = self.queue.len() - 1;
                     }
                     if is_downloading {
-                        if let Some(token) = self.active_token.take() {
-                            token.cancel();
-                        }
                         self.status = "⏹ Download cancelled".into();
                     }
                     self.start_next();
                 }
             }
             KeyCode::Char('r') => {
-                if let Some(item) = self.queue.get_mut(self.selected) {
-                    if matches!(item.state, ItemState::Failed(_)) {
-                        item.state = ItemState::Pending;
-                        self.status = "Item marked for retry".into();
+                if self.selected < self.queue.len() {
+                    let sel = self.selected;
+                    let sel_downloading =
+                        matches!(self.queue[sel].state, ItemState::Downloading { .. });
+                    let active_other = self.queue.iter().enumerate().any(|(i, item)| {
+                        i != sel && matches!(item.state, ItemState::Downloading { .. })
+                    });
+                    if active_other {
+                        self.status = "⏳ Another download is running".into();
+                    } else {
+                        if sel_downloading {
+                            self.cancel_active();
+                        }
+                        self.queue[sel].state = ItemState::Pending;
+                        self.queue_running = true;
+                        self.start_item(sel);
+                        self.status = "↻ Retry".into();
                     }
                 }
-                self.start_next();
+            }
+            KeyCode::Char('p') => {
+                if self.queue_running {
+                    self.cancel_active();
+                    self.queue_running = false;
+                    self.status = "⏸ Paused".into();
+                } else {
+                    self.queue_running = true;
+                    self.status = "▶ Resumed".into();
+                    self.start_next();
+                }
             }
             KeyCode::Char('s') => {
-                self.queue_running = !self.queue_running;
-                if self.queue_running {
-                    self.status = "▶ Queue resumed".into();
-                    self.start_next();
-                } else {
-                    self.status = "⏸ Queue paused".into();
+                if self.selected < self.queue.len() {
+                    let sel = self.selected;
+                    match self.queue[sel].state {
+                        ItemState::Downloading { .. } => {
+                            // Skip: pause the current item and start the next pending one.
+                            self.cancel_active();
+                            let next = self
+                                .queue
+                                .iter()
+                                .enumerate()
+                                .find(|(i, item)| {
+                                    *i != sel && matches!(item.state, ItemState::Pending)
+                                })
+                                .map(|(i, _)| i);
+                            if let Some(idx) = next {
+                                self.queue_running = true;
+                                self.start_item(idx);
+                                self.status = "⏭ Skipped, next started".into();
+                            } else {
+                                self.status = "⏭ Skipped (no pending items)".into();
+                            }
+                        }
+                        ItemState::Pending => {
+                            // Start the selected pending item, stopping the
+                            // previously running download.
+                            self.cancel_active();
+                            self.queue_running = true;
+                            self.start_item(sel);
+                            self.status = "⏩ Started selected item".into();
+                        }
+                        _ => {}
+                    }
                 }
             }
             _ => {}

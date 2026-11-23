@@ -1,13 +1,18 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-pub const ALL_COLUMNS: [&str; 10] = [
-    "num", "added", "name", "url", "mode", "quality", "status", "progress", "percent", "speed",
+pub const ALL_COLUMNS: [&str; 11] = [
+    "num", "added", "name", "url", "path", "mode", "quality", "status", "progress", "percent",
+    "speed",
 ];
 
 pub const WEIGHT_MIN: u16 = 1;
 pub const WEIGHT_MAX: u16 = 100;
 
+pub const SCROLL_MIN: u16 = 1;
+pub const SCROLL_MAX: u16 = 20;
+pub const PADDING_MIN: u16 = 0;
+pub const PADDING_MAX: u16 = 10;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Alignment {
     Left,
@@ -35,6 +40,10 @@ impl Default for Alignment {
 pub struct QueueTableConfig {
     #[serde(default = "default_queue_columns")]
     pub columns: Vec<String>,
+    #[serde(default = "default_scroll_offset")]
+    pub scroll_offset: u16,
+    #[serde(default = "default_side_padding")]
+    pub side_padding: u16,
     #[serde(default = "default_queue_widths")]
     pub widths: HashMap<String, u16>,
     #[serde(default)]
@@ -43,16 +52,21 @@ pub struct QueueTableConfig {
     pub weights: HashMap<String, u16>,
     #[serde(default = "default_alignments")]
     pub alignment: HashMap<String, Alignment>,
+    #[serde(default)]
+    pub hidden_positions: HashMap<String, usize>,
 }
 
 impl Default for QueueTableConfig {
     fn default() -> Self {
         Self {
             columns: default_queue_columns(),
+            scroll_offset: default_scroll_offset(),
+            side_padding: default_side_padding(),
             widths: default_queue_widths(),
             auto_width: default_auto_width(),
             weights: default_weights(),
             alignment: default_alignments(),
+            hidden_positions: HashMap::new(),
         }
     }
 }
@@ -74,6 +88,7 @@ impl QueueTableConfig {
             "added" => 10,
             "name" => 10,
             "url" => 10,
+            "path" => 10,
             "mode" => 10,
             "quality" => 10,
             "status" => 10,
@@ -90,6 +105,7 @@ impl QueueTableConfig {
             "added" => 5,
             "name" => 5,
             "url" => 5,
+            "path" => 5,
             "mode" => 5,
             "quality" => 5,
             "status" => 5,
@@ -110,6 +126,18 @@ impl QueueTableConfig {
         let next = (cur + delta as i32).clamp(WEIGHT_MIN as i32, WEIGHT_MAX as i32) as u16;
         self.set_weight(col, next);
         next
+    }
+
+    pub fn bump_scroll_offset(&mut self, delta: i16) -> u16 {
+        self.scroll_offset = (self.scroll_offset as i32 + delta as i32)
+            .clamp(SCROLL_MIN as i32, SCROLL_MAX as i32) as u16;
+        self.scroll_offset
+    }
+
+    pub fn bump_side_padding(&mut self, delta: i16) -> u16 {
+        self.side_padding = (self.side_padding as i32 + delta as i32)
+            .clamp(PADDING_MIN as i32, PADDING_MAX as i32) as u16;
+        self.side_padding
     }
 
     pub fn set_width(&mut self, col: &str, w: u16) {
@@ -145,10 +173,30 @@ impl QueueTableConfig {
         }
     }
 
-    pub fn add_column(&mut self, col: &str) {
-        if !self.columns.iter().any(|c| c == col) {
-            self.columns.push(col.to_string());
+    /// Removes a visible column and remembers the index it occupied so that
+    /// restoring it later puts it back in the same place. Returns the name of
+    /// the hidden column.
+    pub fn hide_column(&mut self, index: usize) -> Option<String> {
+        if index < self.columns.len() {
+            let col = self.columns.remove(index);
+            self.hidden_positions.insert(col.clone(), index);
+            Some(col)
+        } else {
+            None
         }
+    }
+
+    /// Restores a hidden column at the index it was hidden from.
+    pub fn restore_column(&mut self, col: &str) {
+        if self.columns.iter().any(|c| c == col) {
+            return;
+        }
+        let pos = self
+            .hidden_positions
+            .remove(col)
+            .unwrap_or(self.columns.len())
+            .min(self.columns.len());
+        self.columns.insert(pos, col.to_string());
     }
 
     pub fn hidden_columns(&self) -> Vec<&'static str> {
@@ -189,12 +237,21 @@ fn default_queue_columns() -> Vec<String> {
         .collect()
 }
 
+fn default_scroll_offset() -> u16 {
+    1
+}
+
+fn default_side_padding() -> u16 {
+    1
+}
+
 fn default_queue_widths() -> HashMap<String, u16> {
     let mut m = HashMap::new();
     m.insert("num".into(), 1);
     m.insert("added".into(), 10);
     m.insert("name".into(), 10);
     m.insert("url".into(), 10);
+    m.insert("path".into(), 10);
     m.insert("mode".into(), 10);
     m.insert("quality".into(), 10);
     m.insert("status".into(), 10);
@@ -210,6 +267,7 @@ fn default_weights() -> HashMap<String, u16> {
     m.insert("added".into(), 5);
     m.insert("name".into(), 5);
     m.insert("url".into(), 5);
+    m.insert("path".into(), 5);
     m.insert("mode".into(), 5);
     m.insert("quality".into(), 5);
     m.insert("status".into(), 5);
@@ -225,6 +283,7 @@ fn default_alignments() -> HashMap<String, Alignment> {
     m.insert("added".into(), Alignment::Left);
     m.insert("name".into(), Alignment::Left);
     m.insert("url".into(), Alignment::Left);
+    m.insert("path".into(), Alignment::Left);
     m.insert("mode".into(), Alignment::Left);
     m.insert("quality".into(), Alignment::Left);
     m.insert("status".into(), Alignment::Left);
